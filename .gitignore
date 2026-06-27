@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Next.js build output and cache
+.next/
+frontend/.next/
+out/
+frontend/out/
+build/
+
+# Python cache and environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.pytest_cache/
+
+# Environment files and credentials
+.env
+.env*.local
+*.pem
+
+# IDEs, text editors and OS files
+.vscode/
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Logs and diagnostics
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# User uploads/data
+backend/uploads/*
+!backend/uploads/.gitkeep

@@ -1,9 +1,29 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from config import settings
 
 app = FastAPI(title="TestMocker API")
+
+@app.middleware("http")
+async def limit_payload_size(request: Request, call_next):
+    # Limit size to 5MB (5 * 1024 * 1024 bytes)
+    MAX_SIZE = 5 * 1024 * 1024
+    content_length = request.headers.get("content-length")
+    if content_length:
+        try:
+            if int(content_length) > MAX_SIZE:
+                return JSONResponse(
+                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                    content={"detail": "Payload too large"}
+                )
+        except ValueError:
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={"detail": "Invalid Content-Length header"}
+            )
+    return await call_next(request)
 
 app.add_middleware(
     CORSMiddleware,

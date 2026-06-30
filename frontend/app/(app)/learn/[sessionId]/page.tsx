@@ -1,5 +1,6 @@
 "use client";
 
+import { LatexRenderer } from '@/components/ui/LatexRenderer';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { QuestionPalette } from '@/components/test/QuestionPalette';
@@ -208,8 +209,8 @@ export default function LearnPage({ params }: { params: { sessionId: string } })
 
                 {currentHintText && hintMode !== "loading" && (
                   <div className="bg-primaryAccent/5 border border-primaryAccent/20 rounded p-4 text-sm text-textPrimary leading-relaxed">
-                    <strong className="text-primaryAccent block mb-1">AI Hint</strong>
-                    {currentHintText}
+                    <strong className="text-primaryAccent block mb-2">AI Hint</strong>
+                    <LatexRenderer text={currentHintText} />
                   </div>
                 )}
               </div>

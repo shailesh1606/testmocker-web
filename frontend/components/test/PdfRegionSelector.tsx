@@ -204,7 +204,7 @@ export function PdfRegionSelector({
   };
 
   return (
-    <div className="flex flex-col h-full bg-borderLight overflow-hidden relative w-full">
+    <div className="flex flex-col h-full min-h-0 bg-borderLight overflow-hidden relative w-full">
       {isSelecting && (
         <div className="bg-indigo-600 text-white px-4 py-2.5 flex items-center justify-between text-xs md:text-sm font-medium z-30 shadow-md shrink-0 transition-all duration-200">
           <div className="flex items-center gap-2">
@@ -220,7 +220,7 @@ export function PdfRegionSelector({
         </div>
       )}
 
-      <div className="relative flex-1 overflow-hidden">
+      <div className="relative flex-1 min-h-0 overflow-hidden">
         <PdfCanvasViewer ref={canvasViewerRef} pdfId={pdfId} zoom={zoom} />
 
         {/* Zoom controls */}

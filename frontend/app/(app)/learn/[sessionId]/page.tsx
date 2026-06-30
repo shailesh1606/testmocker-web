@@ -128,7 +128,7 @@ export default function LearnPage({ params }: { params: { sessionId: string } })
   const usedHintCount = hintsUsed[currentIndex] || 0;
 
   return (
-    <div className="flex flex-col min-h-screen bg-pageBg w-full">
+    <div className="flex flex-col h-screen overflow-hidden bg-pageBg w-full">
       <div className="h-14 bg-white border-b border-borderLight px-4 flex items-center justify-between sticky top-0 z-30 shadow-sm shrink-0">
         <div className="flex items-center gap-4">
           <div className="font-bold text-textPrimary flex items-center gap-2">
@@ -141,9 +141,9 @@ export default function LearnPage({ params }: { params: { sessionId: string } })
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row flex-1 overflow-hidden h-[calc(100vh-56px)] w-full max-w-[1600px] mx-auto">
+      <div className="flex flex-col md:flex-row flex-1 overflow-hidden w-full max-w-[1600px] mx-auto min-h-0">
 
-        <div className="w-full md:w-[60%] h-[40%] md:h-full border-b md:border-b-0 md:border-r border-borderLight relative z-10 shrink-0">
+        <div className="w-full md:w-[60%] h-[40%] md:h-full border-b md:border-b-0 md:border-r border-borderLight relative z-10 shrink-0 min-h-0 min-w-0">
           <PdfRegionSelector
             pdfId={session.pdf_id}
             isSelecting={hintMode === "selecting"}
@@ -152,7 +152,7 @@ export default function LearnPage({ params }: { params: { sessionId: string } })
           />
         </div>
 
-        <div className={`w-full md:w-[40%] h-[60%] md:h-full bg-pageBg flex flex-col p-4 overflow-y-auto transition-all duration-300 ${hintMode === "selecting" ? "opacity-50 pointer-events-none select-none" : ""}`}>
+        <div className={`w-full md:w-[40%] h-[60%] md:h-full bg-pageBg flex flex-col p-4 overflow-y-auto min-h-0 min-w-0 transition-all duration-300 ${hintMode === "selecting" ? "opacity-50 pointer-events-none select-none" : ""}`}>
           <div className="shrink-0 mb-6">
             <QuestionPalette
               totalQuestions={session.num_questions}

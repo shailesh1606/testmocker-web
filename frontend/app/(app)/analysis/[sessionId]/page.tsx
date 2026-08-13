@@ -8,11 +8,13 @@ import { useToast } from '@/components/ui/ToastProvider';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
+import { TimePerQuestionChart } from '@/components/analysis/TimePerQuestionChart';
 
 export default function AnalysisPage({ params }: { params: { sessionId: string } }) {
   const { addToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [topics, setTopics] = useState<any[]>([]);
+  const [sessionData, setSessionData] = useState<any>(null);
 
   useEffect(() => {
     const fetchAnalysis = async () => {
@@ -21,6 +23,11 @@ export default function AnalysisPage({ params }: { params: { sessionId: string }
         const data = await res.json();
         if (!res.ok) throw new Error();
         setTopics(data.topics || []);
+
+        const sessionRes = await fetch(`/api/sessions/${params.sessionId}`);
+        const sessionD = await sessionRes.json();
+        if (!sessionRes.ok) throw new Error();
+        setSessionData(sessionD);
       } catch(err) {
         addToast("Analysis failed to load", "error");
       } finally {
@@ -37,6 +44,8 @@ export default function AnalysisPage({ params }: { params: { sessionId: string }
     acc[t.section].push(t);
     return acc;
   }, {});
+
+  const timePerQuestion: number[] = sessionData?.time_per_question ?? [];
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen w-full relative">
@@ -62,50 +71,68 @@ export default function AnalysisPage({ params }: { params: { sessionId: string }
               <button className="mt-4 text-primaryAccent hover:underline" onClick={() => window.location.reload()}>Retry</button>
             </div>
           ) : (
-            <div className="flex flex-col lg:flex-row gap-8">
-              
-              {/* Chart */}
-              <div className="lg:w-[40%] bg-white border border-borderLight shadow-sm rounded-lg p-6">
-                <h3 className="font-bold text-lg mb-6">Topic Distribution</h3>
-                <div className="h-[350px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={topics} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={120} label>
-                        {topics.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Topics Breakdown */}
-              <div className="lg:w-[60%] flex flex-col gap-6">
-                {Object.keys(groupBySection).map((section) => (
-                  <div key={section} className="bg-white border border-borderLight shadow-sm rounded-lg p-6">
-                    <h3 className="font-bold text-lg mb-4 text-primaryAccent">{section}</h3>
-                    <div className="flex flex-col gap-4">
-                      {groupBySection[section].map((t: any, i: number) => {
-                        const totalSec = groupBySection[section].reduce((s: number, i: any) => s + i.count, 0);
-                        const pct = Math.round((t.count / totalSec) * 100);
-                        return (
-                          <div key={i} className="flex flex-col gap-1">
-                            <div className="flex justify-between text-sm font-medium">
-                              <span>{t.name}</span>
-                              <span className="text-textSecondary">{t.count} questions ({pct}%)</span>
-                            </div>
-                            <ProgressBar progress={pct} color="bg-primaryAccent" height="h-2" />
-                          </div>
-                        );
-                      })}
-                    </div>
+            <div className="flex flex-col gap-8">
+              <div className="flex flex-col lg:flex-row gap-8">
+                
+                {/* Chart */}
+                <div className="lg:w-[40%] bg-white border border-borderLight shadow-sm rounded-lg p-6">
+                  <h3 className="font-bold text-lg mb-6">Topic Distribution</h3>
+                  <div className="h-[350px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={topics} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={120} label>
+                          {topics.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
                   </div>
-                ))}
+                </div>
+
+                {/* Topics Breakdown */}
+                <div className="lg:w-[60%] flex flex-col gap-6">
+                  {Object.keys(groupBySection).map((section) => (
+                    <div key={section} className="bg-white border border-borderLight shadow-sm rounded-lg p-6">
+                      <h3 className="font-bold text-lg mb-4 text-primaryAccent">{section}</h3>
+                      <div className="flex flex-col gap-4">
+                        {groupBySection[section].map((t: any, i: number) => {
+                          const totalSec = groupBySection[section].reduce((s: number, i: any) => s + i.count, 0);
+                          const pct = Math.round((t.count / totalSec) * 100);
+                          return (
+                            <div key={i} className="flex flex-col gap-1">
+                              <div className="flex justify-between text-sm font-medium">
+                                <span>{t.name}</span>
+                                <span className="text-textSecondary">{t.count} questions ({pct}%)</span>
+                              </div>
+                              <ProgressBar progress={pct} color="bg-primaryAccent" height="h-2" />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
               </div>
 
+              {timePerQuestion.length > 0 && (
+                <TimePerQuestionChart
+                  timePerQuestion={timePerQuestion}
+                  answers={sessionData.answers ?? []}
+                  correctAnswers={sessionData.correct_answers ?? []}
+                />
+              )}
+
+              {timePerQuestion.length === 0 && (
+                <div className="bg-white border border-borderLight rounded-lg p-6 text-center text-sm text-textSecondary shadow-sm">
+                  No time tracking data available for this session.
+                  <br />
+                  <span className="text-xs">(Only available for tests taken after this feature was added.)</span>
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -10,6 +10,12 @@ const nextConfig = {
       },
     ]
   },
+  webpack: (config) => {
+    config.resolve.alias.canvas = false;
+    config.resolve.alias.encoding = false;
+    config.resolve.alias['pdfjs-dist'] = 'pdfjs-dist/build/pdf.min.mjs';
+    return config;
+  },
 }
 
 export default nextConfig;

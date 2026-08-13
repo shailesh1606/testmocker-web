@@ -3,6 +3,7 @@
 import { LatexRenderer } from '@/components/ui/LatexRenderer';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQuestionTimer } from '@/hooks/useQuestionTimer';
 import { QuestionPalette } from '@/components/test/QuestionPalette';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -31,6 +32,13 @@ export default function LearnPage({ params }: { params: { sessionId: string } })
   const [answers, setAnswers] = useState<any[]>([]);
   const [markedForReview, setMarkedForReview] = useState<boolean[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const { onQuestionChange, flush, getTimePerQuestion } = useQuestionTimer(session?.num_questions ?? 0);
+
+  const goToQuestion = (idx: number) => {
+    onQuestionChange(idx);
+    setCurrentIndex(idx);
+  };
 
   const [hintsUsed, setHintsUsed] = useState<Record<string, number>>({});
   const [hintMode, setHintMode] = useState<"idle" | "selecting" | "loading" | "shown">("idle");
@@ -107,13 +115,16 @@ export default function LearnPage({ params }: { params: { sessionId: string } })
 
   const handleFinish = async () => {
     try {
+      flush();
+      const timePerQuestion = getTimePerQuestion();
       await fetch(`/api/sessions/${params.sessionId}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           answers,
           question_types: session.question_types,
-          time_taken_seconds: 0
+          time_taken_seconds: timePerQuestion.reduce((a, b) => a + b, 0),
+          time_per_question: timePerQuestion,
         })
       });
       router.push(`/test/${params.sessionId}/answer-key`);
@@ -160,7 +171,7 @@ export default function LearnPage({ params }: { params: { sessionId: string } })
               currentIndex={currentIndex}
               answers={answers}
               markedForReview={markedForReview}
-              onSelect={setCurrentIndex}
+              onSelect={goToQuestion}
             />
           </div>
 
@@ -217,8 +228,8 @@ export default function LearnPage({ params }: { params: { sessionId: string } })
             </div>
 
             <div className="mt-8 pt-4 border-t border-borderLight flex items-center justify-end gap-2 text-right w-full">
-              <Button variant="secondary" onClick={() => setCurrentIndex(c => Math.max(0, c - 1))} disabled={currentIndex === 0} size="sm">Prev</Button>
-              <Button onClick={() => setCurrentIndex(c => Math.min(session.num_questions - 1, c + 1))} disabled={currentIndex === session.num_questions - 1} size="sm">Save & Next</Button>
+              <Button variant="secondary" onClick={() => goToQuestion(Math.max(0, currentIndex - 1))} disabled={currentIndex === 0} size="sm">Prev</Button>
+              <Button onClick={() => goToQuestion(Math.min(session.num_questions - 1, currentIndex + 1))} disabled={currentIndex === session.num_questions - 1} size="sm">Save & Next</Button>
             </div>
           </div>
 

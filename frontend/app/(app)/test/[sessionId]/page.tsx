@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQuestionTimer } from '@/hooks/useQuestionTimer';
 import { PdfViewer } from '@/components/test/PdfViewer';
 import { CountdownTimer } from '@/components/test/CountdownTimer';
 import { QuestionPalette } from '@/components/test/QuestionPalette';
@@ -19,6 +20,13 @@ export default function TestPage({ params }: { params: { sessionId: string } }) 
   const [markedForReview, setMarkedForReview] = useState<boolean[]>([]);
   const [startedAt, setStartedAt] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+
+  const { onQuestionChange, flush, getTimePerQuestion } = useQuestionTimer(session?.num_questions ?? 0);
+
+  const goToQuestion = (idx: number) => {
+    onQuestionChange(idx);
+    setCurrentIndex(idx);
+  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -73,20 +81,20 @@ export default function TestPage({ params }: { params: { sessionId: string } }) 
 
   const handleNext = () => {
     if (currentIndex < session.num_questions - 1) {
-      setCurrentIndex(c => c + 1);
+      goToQuestion(currentIndex + 1);
     }
   };
 
   const handlePrev = () => {
     if (currentIndex > 0) {
-      setCurrentIndex(c => c - 1);
+      goToQuestion(currentIndex - 1);
     }
   };
 
   const handleSubmit = async () => {
     try {
-      const now = Math.floor(Date.now() / 1000);
-      const tt = Math.min(now - startedAt, session.time_limit_seconds);
+      flush();
+      const timePerQuestion = getTimePerQuestion();
       
       await fetch(`/api/sessions/${params.sessionId}/submit`, {
         method: 'POST',
@@ -94,7 +102,8 @@ export default function TestPage({ params }: { params: { sessionId: string } }) 
         body: JSON.stringify({
           answers,
           question_types: session.question_types,
-          time_taken_seconds: tt
+          time_taken_seconds: timePerQuestion.reduce((a, b) => a + b, 0),
+          time_per_question: timePerQuestion,
         })
       });
       localStorage.removeItem(`test_start_${params.sessionId}`);
@@ -145,7 +154,7 @@ export default function TestPage({ params }: { params: { sessionId: string } }) 
               currentIndex={currentIndex}
               answers={answers}
               markedForReview={markedForReview}
-              onSelect={setCurrentIndex}
+              onSelect={goToQuestion}
             />
           </div>
 

@@ -25,6 +25,7 @@ class SessionSubmit(BaseModel):
     answers: List[Optional[AnswerItem]]
     question_types: List[str]
     time_taken_seconds: int
+    time_per_question: List[int] = []
 
 class AnswerKeySubmit(BaseModel):
     correct_answers: List[Optional[AnswerItem]]
@@ -45,6 +46,7 @@ class SessionInDB(BaseModel):
     status: str = "in_progress" # in_progress | submitted | completed
     hints_used: Dict[str, int] = {} # { "0": 1 }
     time_taken_seconds: Optional[int] = None
+    time_per_question: List[int] = []
     created_at: datetime = Field(default_factory=datetime.utcnow)
     submitted_at: Optional[datetime] = None
     score: Optional[float] = None

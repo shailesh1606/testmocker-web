@@ -61,6 +61,7 @@ async def submit_session(session_id: str, data: SessionSubmit, user_id: PyObject
         "answers": answers_dicts,
         "question_types": data.question_types,
         "time_taken_seconds": data.time_taken_seconds,
+        "time_per_question": data.time_per_question,
         "submitted_at": datetime.utcnow()
     }
     await app.mongodb["sessions"].update_one(

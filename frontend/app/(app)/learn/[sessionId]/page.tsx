@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/ToastProvider';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 
 const PdfRegionSelector = dynamic(
   () => import('@/components/test/PdfRegionSelector').then((mod) => mod.PdfRegionSelector),
@@ -143,10 +144,10 @@ export default function LearnPage({ params }: { params: { sessionId: string } })
     <div className="flex flex-col h-screen overflow-hidden bg-pageBg w-full">
       <div className="h-14 bg-white border-b border-borderLight px-4 flex items-center justify-between sticky top-0 z-30 shadow-sm shrink-0">
         <div className="flex items-center gap-4">
-          <div className="font-bold text-textPrimary flex items-center gap-2">
+          <Link href="/" className="font-bold text-textPrimary flex items-center gap-2 hover:opacity-90 transition-opacity">
             TestMocker <span className="w-1.5 h-1.5 rounded-full bg-review inline-block" />
             <span className="ml-2 font-medium text-xs rounded border border-review text-review px-2 uppercase text-xs hidden md:inline-block">Learning Mode</span>
-          </div>
+          </Link>
         </div>
         <div className="flex items-center gap-4">
           <Button onClick={handleFinish} size="sm">Finish & See Report</Button>

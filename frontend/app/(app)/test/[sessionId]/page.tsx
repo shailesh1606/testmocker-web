@@ -9,6 +9,7 @@ import { QuestionPalette } from '@/components/test/QuestionPalette';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/ToastProvider';
+import Link from 'next/link';
 
 export default function TestPage({ params }: { params: { sessionId: string } }) {
   const router = useRouter();
@@ -123,9 +124,9 @@ export default function TestPage({ params }: { params: { sessionId: string } }) 
       {/* Top Header */}
       <div className="h-14 bg-white border-b border-borderLight px-4 flex items-center justify-between sticky top-0 z-30 shadow-sm shrink-0">
         <div className="flex items-center gap-4">
-          <div className="font-bold text-textPrimary flex items-center gap-2">
+          <Link href="/" className="font-bold text-textPrimary flex items-center gap-2 hover:opacity-90 transition-opacity">
             TestMocker <span className="w-1.5 h-1.5 rounded-full bg-primaryAccent inline-block" />
-          </div>
+          </Link>
           <div className="hidden md:block px-3 py-1 bg-pageBg text-textSecondary uppercase font-medium text-xs rounded border border-borderLight">
             {session.exam_type}
           </div>

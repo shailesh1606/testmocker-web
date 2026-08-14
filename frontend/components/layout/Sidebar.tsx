@@ -26,9 +26,9 @@ export function Sidebar() {
   return (
     <>
       <div className={desktopCls}>
-        <div className="px-6 pb-6 text-xl font-bold text-white flex items-center gap-2">
+        <Link href="/" className="px-6 pb-6 text-xl font-bold text-white flex items-center gap-2 hover:opacity-90 transition-opacity">
           TestMocker <span className="w-2 h-2 rounded-full bg-primaryAccent"></span>
-        </div>
+        </Link>
         
         <nav className="flex-1 flex flex-col gap-2 px-4">
           {menu.map((item) => {

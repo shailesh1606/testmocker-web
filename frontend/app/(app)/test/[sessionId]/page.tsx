@@ -74,6 +74,21 @@ export default function TestPage({ params }: { params: { sessionId: string } }) 
     saveAnswer(currentIndex, update);
   };
 
+  const handleUpdateQuestionType = (newType: string) => {
+    const updatedTypes = [...session.question_types];
+    updatedTypes[currentIndex] = newType;
+    setSession({
+      ...session,
+      question_types: updatedTypes
+    });
+
+    const newAnswers = [...answers];
+    const update = { type: newType, value: "" };
+    newAnswers[currentIndex] = update;
+    setAnswers(newAnswers);
+    saveAnswer(currentIndex, update);
+  };
+
   const handleToggleReview = () => {
     const m = [...markedForReview];
     m[currentIndex] = !m[currentIndex];
@@ -165,7 +180,21 @@ export default function TestPage({ params }: { params: { sessionId: string } }) 
           </div>
 
           <div className="bg-white border border-borderLight rounded-lg p-6 flex-1 flex flex-col shadow-sm">
-            <h2 className="text-lg font-bold mb-6 pb-4 border-b border-borderLight text-textPrimary">Question {currentIndex + 1} of {session.num_questions}</h2>
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-borderLight flex-wrap gap-2">
+              <h2 className="text-lg font-bold text-textPrimary leading-none">Question {currentIndex + 1} of {session.num_questions}</h2>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-textSecondary uppercase tracking-wider">Question Type:</span>
+                <select
+                  value={cType}
+                  onChange={(e) => handleUpdateQuestionType(e.target.value)}
+                  className="px-2 py-1 text-xs border border-borderLight bg-white rounded font-medium focus:outline-none focus:border-primaryAccent focus:ring-1 focus:ring-primaryAccent"
+                >
+                  <option value="mcq">MCQ</option>
+                  <option value="numeric">Numeric</option>
+                  <option value="text">Text</option>
+                </select>
+              </div>
+            </div>
             
             <div className="flex-1 flex flex-col justify-center">
               {cType === 'mcq' && (

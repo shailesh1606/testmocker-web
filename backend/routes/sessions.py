@@ -47,10 +47,16 @@ async def get_session(session_id: str, user_id: PyObjectId = Depends(get_current
 async def patch_answer(session_id: str, patch: AnswerPatch, user_id: PyObjectId = Depends(get_current_user_id)):
     from bson import ObjectId
     session_q = {"$in": [session_id, ObjectId(session_id)]} if ObjectId.is_valid(session_id) else session_id
-    # Simple array update via index
+    
+    update_fields = {
+        f"answers.{patch.question_index}": patch.answer
+    }
+    if patch.answer and "type" in patch.answer:
+        update_fields[f"question_types.{patch.question_index}"] = patch.answer["type"]
+        
     result = await app.mongodb["sessions"].update_one(
         {"_id": session_q, "user_id": user_id},
-        {"$set": {f"answers.{patch.question_index}": patch.answer}}
+        {"$set": update_fields}
     )
     if result.modified_count == 0:
         raise HTTPException(status_code=404, detail="Session not found or question index out of bounds")

@@ -30,6 +30,10 @@ export default function CreateTestPage() {
   const [mpc, setMpc] = useState(4.0);
   const [nmpw, setNmpw] = useState(-1.0);
 
+  // Answers State
+  const [correctAnswers, setCorrectAnswers] = useState<any[]>([]);
+  const [extracting, setExtracting] = useState(false);
+
   // Student details
   const [studentQuery, setStudentQuery] = useState('');
   const [foundStudent, setFoundStudent] = useState<any>(null);
@@ -42,7 +46,6 @@ export default function CreateTestPage() {
     const studentIdParam = searchParams.get('studentId');
     if (studentIdParam) {
       setStudentQuery(studentIdParam);
-      // Auto-lookup if student ID is passed in the URL
       const lookupStudent = async () => {
         setSearchingStudent(true);
         try {
@@ -114,11 +117,43 @@ export default function CreateTestPage() {
       if (!res.ok) throw new Error(data.detail || "Student not found");
       setFoundStudent(data);
       addToast("Student verified successfully!", "success");
-    } catch(err: any) {
+    } catch (err: any) {
       addToast(err.message, "error");
     } finally {
       setSearchingStudent(false);
     }
+  };
+
+  const startAnswerExtraction = async () => {
+    setStep(3);
+    setExtracting(true);
+    try {
+      const res = await fetch('/api/mentors/tests/extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pdf_id: qpPdfId,
+          answer_key_pdf_id: akPdfId,
+          num_questions: numQuestions
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Failed to extract answers");
+      setCorrectAnswers(data.answers);
+      addToast("AI Answer Key extraction complete!", "success");
+    } catch (err: any) {
+      addToast(err.message || "Failed to extract answers automatically.", "error");
+      setCorrectAnswers(Array(numQuestions).fill(null).map(() => ({ type: 'mcq', value: '' })));
+    } finally {
+      setExtracting(false);
+    }
+  };
+
+  const handleUpdateAnswer = (idx: number, field: string, val: string) => {
+    const copy = [...correctAnswers];
+    copy[idx] = { ...copy[idx], [field]: val };
+    if (field === 'type') copy[idx].value = '';
+    setCorrectAnswers(copy);
   };
 
   const handleFinishAndRecommend = async () => {
@@ -149,7 +184,8 @@ export default function CreateTestPage() {
           marks_per_correct: mpc,
           negative_mark: nmpw,
           pdf_id: qpPdfId,
-          answer_key_pdf_id: akPdfId
+          answer_key_pdf_id: akPdfId,
+          correct_answers: correctAnswers.map(c => c.value ? c : null)
         })
       });
       const testData = await testRes.json();
@@ -183,15 +219,17 @@ export default function CreateTestPage() {
       <Sidebar />
       <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden">
         <TopBar title="Create & Assign Mock Test" />
-        
-        <div className="p-6 md:p-10 flex-1 w-full max-w-3xl mx-auto">
+
+        <div className="p-6 md:p-10 flex-1 w-full max-w-3xl mx-auto animate-fade-in">
           {/* Progress Indicator */}
-          <div className="flex items-center justify-between mb-8 text-sm font-semibold border-b border-borderLight pb-4">
+          <div className="flex items-center justify-between mb-8 text-sm font-semibold border-b border-borderLight pb-4 flex-wrap gap-2">
             <span className={step === 1 ? 'text-primaryAccent font-bold' : 'text-textSecondary'}>1. Upload PDFs</span>
             <span className="text-textSecondary/40">→</span>
             <span className={step === 2 ? 'text-primaryAccent font-bold' : 'text-textSecondary'}>2. Configure Test</span>
             <span className="text-textSecondary/40">→</span>
-            <span className={step === 3 ? 'text-primaryAccent font-bold' : 'text-textSecondary'}>3. Assign to Student</span>
+            <span className={step === 3 ? 'text-primaryAccent font-bold' : 'text-textSecondary'}>3. Review Answer Key</span>
+            <span className="text-textSecondary/40">→</span>
+            <span className={step === 4 ? 'text-primaryAccent font-bold' : 'text-textSecondary'}>4. Assign to Student</span>
           </div>
 
           {/* STEP 1: UPLOAD PDFs */}
@@ -205,15 +243,15 @@ export default function CreateTestPage() {
               {/* Question Paper PDF */}
               <div className="space-y-2">
                 <label className="text-sm font-bold text-textPrimary block">Question Paper PDF *</label>
-                <div 
+                <div
                   onClick={() => qpInputRef.current?.click()}
                   className={`border-2 border-dashed border-borderLight rounded-lg p-6 text-center cursor-pointer hover:bg-pageBg/40 transition-colors ${qpPdfId ? 'border-success bg-success/5' : ''}`}
                 >
-                  <input 
-                    type="file" 
-                    ref={qpInputRef} 
+                  <input
+                    type="file"
+                    ref={qpInputRef}
                     onChange={(e) => e.target.files?.[0] && handleUploadFile(e.target.files[0], 'qp')}
-                    className="hidden" 
+                    className="hidden"
                     accept="application/pdf"
                   />
                   {qpFileName ? (
@@ -233,15 +271,15 @@ export default function CreateTestPage() {
               {/* Answer Key PDF */}
               <div className="space-y-2">
                 <label className="text-sm font-bold text-textPrimary block">Answer Key PDF (Optional)</label>
-                <div 
+                <div
                   onClick={() => akInputRef.current?.click()}
                   className={`border-2 border-dashed border-borderLight rounded-lg p-6 text-center cursor-pointer hover:bg-pageBg/40 transition-colors ${akPdfId ? 'border-success bg-success/5' : ''}`}
                 >
-                  <input 
-                    type="file" 
-                    ref={akInputRef} 
+                  <input
+                    type="file"
+                    ref={akInputRef}
                     onChange={(e) => e.target.files?.[0] && handleUploadFile(e.target.files[0], 'ak')}
-                    className="hidden" 
+                    className="hidden"
                     accept="application/pdf"
                   />
                   {akFileName ? (
@@ -260,9 +298,9 @@ export default function CreateTestPage() {
               </div>
 
               <div className="flex justify-end pt-4 border-t border-borderLight/60">
-                <Button 
-                  onClick={() => setStep(2)} 
-                  disabled={!qpPdfId || loading} 
+                <Button
+                  onClick={() => setStep(2)}
+                  disabled={!qpPdfId || loading}
                   className="px-6"
                 >
                   Configure Test Settings
@@ -340,13 +378,92 @@ export default function CreateTestPage() {
 
               <div className="flex justify-between pt-4 border-t border-borderLight/60">
                 <Button variant="ghost" onClick={() => setStep(1)}>Back</Button>
-                <Button onClick={() => setStep(3)} className="px-6">Assign to Student</Button>
+                <Button onClick={startAnswerExtraction} className="px-6" disabled={!title.trim()}>Extract & Review Answers</Button>
               </div>
             </div>
           )}
 
-          {/* STEP 3: ASSIGN TO STUDENT */}
+          {/* STEP 3: REVIEW ANSWER KEY */}
           {step === 3 && (
+            <div className="bg-white p-6 md:p-8 rounded-lg border border-borderLight shadow-sm space-y-6">
+              <div>
+                <h2 className="text-lg font-bold text-textPrimary mb-1">Verify AI Extracted Answers</h2>
+                <p className="text-xs text-textSecondary">Review and correct the correct answers before final assignment.</p>
+              </div>
+
+              {extracting ? (
+                <div className="text-center py-16 space-y-4">
+                  <div className="w-8 h-8 border-4 border-primaryAccent border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  <p className="text-sm font-semibold text-textSecondary animate-pulse">
+                    Extracting answers from your question paper...
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="overflow-x-auto max-h-[50vh] overflow-y-auto border border-borderLight rounded shadow-sm">
+                    <table className="w-full text-left border-collapse text-sm">
+                      <thead className="sticky top-0 bg-pageBg border-b border-borderLight shadow-sm z-10">
+                        <tr className="text-xs uppercase text-textSecondary font-medium">
+                          <th className="py-3 px-4">Q.No</th>
+                          <th className="py-3 px-4">Answer Type</th>
+                          <th className="py-3 px-4">Correct Answer</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {correctAnswers.map((ca, idx) => (
+                          <tr key={idx} className={`border-b border-borderLight h-10 ${idx % 2 !== 0 ? 'bg-pageBg/30' : ''}`}>
+                            <td className="py-2 px-4 font-medium">{idx + 1}</td>
+                            <td className="py-2 px-4">
+                              <select
+                                className="text-xs border rounded p-1 w-full bg-white outline-none focus:border-primaryAccent"
+                                value={ca.type}
+                                onChange={(e) => handleUpdateAnswer(idx, 'type', e.target.value)}
+                              >
+                                <option value="mcq">MCQ</option>
+                                <option value="numeric">Numeric</option>
+                                <option value="text">Text</option>
+                              </select>
+                            </td>
+                            <td className="py-2 px-4 min-w-[200px]">
+                              {ca.type === 'mcq' ? (
+                                <div className="flex bg-pageBg border border-borderLight rounded self-start inline-flex">
+                                  {['A', 'B', 'C', 'D'].map(opt => (
+                                    <button
+                                      key={opt}
+                                      type="button"
+                                      onClick={() => handleUpdateAnswer(idx, 'value', opt)}
+                                      className={`px-3 py-1 font-medium text-xs transition-colors rounded-none outline-none ${ca.value === opt ? 'bg-primaryAccent text-white' : 'text-textSecondary hover:bg-white'}`}
+                                    >
+                                      {opt}
+                                    </button>
+                                  ))}
+                                </div>
+                              ) : (
+                                <input
+                                  className="border rounded px-2 py-1 text-sm outline-none focus:border-primaryAccent w-full text-textPrimary bg-white"
+                                  value={ca.value || ''}
+                                  onChange={(e) => handleUpdateAnswer(idx, 'value', e.target.value)}
+                                  placeholder="Enter value"
+                                />
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="flex justify-between pt-4 border-t border-borderLight/60">
+                    <Button variant="ghost" onClick={() => setStep(2)}>Back</Button>
+                    <Button onClick={() => setStep(4)} className="px-6">Next: Assign to Student</Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* STEP 4: ASSIGN TO STUDENT */}
+          {step === 4 && (
             <div className="bg-white p-6 md:p-8 rounded-lg border border-borderLight shadow-sm space-y-6">
               <div>
                 <h2 className="text-lg font-bold text-textPrimary mb-1">Verify Student Assignment</h2>
@@ -363,10 +480,10 @@ export default function CreateTestPage() {
                       onChange={e => setStudentQuery(e.target.value)}
                     />
                   </div>
-                  <Button 
-                    type="button" 
-                    onClick={handleLookup} 
-                    disabled={searchingStudent} 
+                  <Button
+                    type="button"
+                    onClick={handleLookup}
+                    disabled={searchingStudent}
                     className="self-end h-[42px] px-6"
                   >
                     {searchingStudent ? 'Verifying...' : 'Verify'}
@@ -389,10 +506,10 @@ export default function CreateTestPage() {
               </div>
 
               <div className="flex justify-between pt-4 border-t border-borderLight/60">
-                <Button variant="ghost" onClick={() => setStep(2)}>Back</Button>
-                <Button 
-                  onClick={handleFinishAndRecommend} 
-                  disabled={loading || !foundStudent} 
+                <Button variant="ghost" onClick={() => setStep(3)}>Back</Button>
+                <Button
+                  onClick={handleFinishAndRecommend}
+                  disabled={loading || !foundStudent}
                   className="px-6"
                 >
                   {loading ? 'Assigning...' : 'Create & Assign Test'}

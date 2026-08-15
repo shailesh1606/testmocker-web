@@ -7,6 +7,8 @@ from typing import Optional, List
 from datetime import datetime
 from bson import ObjectId
 
+from services.extraction_service import extract_answers_from_pdf
+
 router = APIRouter(prefix="/api/mentors", tags=["mentors"])
 
 class MentorTestCreate(BaseModel):
@@ -18,15 +20,46 @@ class MentorTestCreate(BaseModel):
     negative_mark: float
     pdf_id: str
     answer_key_pdf_id: Optional[str] = None
+    correct_answers: List[Optional[dict]] = []
 
 class RecommendRequest(BaseModel):
     test_id: str
     student_id: str
 
+class MentorExtractRequest(BaseModel):
+    pdf_id: str
+    answer_key_pdf_id: Optional[str] = None
+    num_questions: int = 75
+
 async def require_mentor(user_id: PyObjectId):
-    user = await app.mongodb["users"].find_one({"_id": user_id})
+    user_q = {"$in": [user_id, ObjectId(user_id)]} if ObjectId.is_valid(user_id) else user_id
+    user = await app.mongodb["users"].find_one({"_id": user_q})
     if not user or user.get("role", "STUDENT") != "MENTOR":
         raise HTTPException(status_code=403, detail="Only mentors can access this functionality")
+
+@router.post("/tests/extract")
+async def mentor_extract_answers(data: MentorExtractRequest, user_id: PyObjectId = Depends(get_current_user_id)):
+    await require_mentor(user_id)
+    
+    qp_q = {"$in": [data.pdf_id, ObjectId(data.pdf_id)]} if ObjectId.is_valid(data.pdf_id) else data.pdf_id
+    qp_doc = await app.mongodb["pdf_files"].find_one({"_id": qp_q})
+    if not qp_doc:
+        raise HTTPException(status_code=404, detail="Question paper PDF metadata not found")
+    qp_path = qp_doc["storage_path"]
+    
+    ak_path = None
+    if data.answer_key_pdf_id:
+        ak_q = {"$in": [data.answer_key_pdf_id, ObjectId(data.answer_key_pdf_id)]} if ObjectId.is_valid(data.answer_key_pdf_id) else data.answer_key_pdf_id
+        ak_doc = await app.mongodb["pdf_files"].find_one({"_id": ak_q})
+        if not ak_doc:
+            raise HTTPException(status_code=404, detail="Answer key PDF metadata not found")
+        ak_path = ak_doc["storage_path"]
+        
+    try:
+        answers = await extract_answers_from_pdf(qp_path, ak_path, data.num_questions)
+        return {"answers": answers}
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Answer extraction failed: {str(e)}")
 
 @router.get("/students/{query}")
 async def get_student(query: str, user_id: PyObjectId = Depends(get_current_user_id)):
@@ -55,12 +88,6 @@ async def get_student(query: str, user_id: PyObjectId = Depends(get_current_user
 async def create_mentor_test(data: MentorTestCreate, user_id: PyObjectId = Depends(get_current_user_id)):
     await require_mentor(user_id)
     
-    correct_answers = []
-    if data.answer_key_pdf_id:
-        import random
-        for _ in range(data.num_questions):
-            correct_answers.append({"type": "mcq", "value": random.choice(["A", "B", "C", "D"])})
-            
     test_db = {
         "mentor_id": user_id,
         "title": data.title,
@@ -71,7 +98,7 @@ async def create_mentor_test(data: MentorTestCreate, user_id: PyObjectId = Depen
         "negative_mark": data.negative_mark,
         "pdf_id": PyObjectId(data.pdf_id),
         "answer_key_pdf_id": PyObjectId(data.answer_key_pdf_id) if data.answer_key_pdf_id else None,
-        "correct_answers": correct_answers,
+        "correct_answers": data.correct_answers,
         "created_at": datetime.utcnow()
     }
     

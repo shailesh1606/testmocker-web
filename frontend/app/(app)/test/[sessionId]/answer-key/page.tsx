@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/ToastProvider';
 
 export default function AnswerKeyPage({ params }: { params: { sessionId: string } }) {
@@ -13,8 +12,17 @@ export default function AnswerKeyPage({ params }: { params: { sessionId: string 
   const [session, setSession] = useState<any>(null);
   const [correctAnswers, setCorrectAnswers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Extraction state
   const [extracting, setExtracting] = useState(false);
   const [activeTab, setActiveTab] = useState<'manual'|'auto'>('manual');
+  const [showUploadModal, setShowUploadModal] = useState(false);
+
+  // Upload state
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadedKeyPdfId, setUploadedKeyPdfId] = useState<string | null>(null);
+  const [uploadedKeyFileName, setUploadedKeyFileName] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     const loadSession = async () => {
@@ -39,22 +47,54 @@ export default function AnswerKeyPage({ params }: { params: { sessionId: string 
   const handleUpdate = (idx: number, field: string, val: string) => {
     const copy = [...correctAnswers];
     copy[idx] = { ...copy[idx], [field]: val };
-    // If type changes, clear value to avoid bugs
     if (field === 'type') copy[idx].value = '';
     setCorrectAnswers(copy);
   };
 
-  const handleAutoExtract = async () => {
+  const handleUploadKeyFile = async (file: File) => {
+    if (file.type !== 'application/pdf') {
+      addToast('Please upload a PDF file.', 'error');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/pdf/upload', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Upload failed");
+
+      setUploadedKeyPdfId(data.pdf_id);
+      setUploadedKeyFileName(file.name);
+      addToast('Answer Key uploaded successfully!', 'success');
+    } catch (err: any) {
+      addToast(err.message, 'error');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleAutoExtract = async (answerKeyPdfId: string | null) => {
     setExtracting(true);
     try {
-      const res = await fetch(`/api/answers/extract/${params.sessionId}`, { method: 'POST' });
+      const res = await fetch(`/api/answers/extract/${params.sessionId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answer_key_pdf_id: answerKeyPdfId })
+      });
       const data = await res.json();
-      if (!res.ok) throw new Error();
+      if (!res.ok) throw new Error(data.detail || "Failed to extract answers");
+      
       setCorrectAnswers(data.answers);
       addToast("Successfully extracted answers!", "success");
       setActiveTab('manual');
-    } catch(err) {
-      addToast("Failed to auto-extract answer key.", "error");
+    } catch(err: any) {
+      addToast(err.message || "Failed to auto-extract answer key.", "error");
     } finally {
       setExtracting(false);
     }
@@ -112,7 +152,7 @@ export default function AnswerKeyPage({ params }: { params: { sessionId: string 
                 <p className="text-textSecondary mb-6 max-w-sm mx-auto">
                   AI will attempt to extract the answer key from the uploaded PDF. This may not be 100% accurate.
                 </p>
-                <Button onClick={handleAutoExtract} disabled={extracting}>
+                <Button onClick={() => setShowUploadModal(true)} disabled={extracting}>
                   {extracting ? 'Extracting with AI...' : 'Extract with AI'}
                 </Button>
               </div>
@@ -178,6 +218,70 @@ export default function AnswerKeyPage({ params }: { params: { sessionId: string 
           </div>
         </div>
       </div>
+
+      {/* Upload Modal */}
+      {showUploadModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-lg border border-borderLight flex flex-col gap-6">
+            <div>
+              <h3 className="font-bold text-lg text-textPrimary">Have an answer key?</h3>
+              <p className="text-xs text-textSecondary mt-1 leading-relaxed">
+                Upload it for more accurate extraction (Optional). If not provided, we will extract/solve using only the Question Paper.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-textPrimary block">Answer Key PDF (Optional)</label>
+              <div 
+                onClick={() => !uploading && fileInputRef.current?.click()}
+                className={`border-2 border-dashed border-borderLight rounded-lg p-6 text-center cursor-pointer hover:bg-pageBg/40 transition-colors ${uploadedKeyPdfId ? 'border-success bg-success/5' : ''}`}
+              >
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={(e) => e.target.files?.[0] && handleUploadKeyFile(e.target.files[0])}
+                  className="hidden" 
+                  accept="application/pdf"
+                  disabled={uploading}
+                />
+                {uploadedKeyFileName ? (
+                  <div className="space-y-1">
+                    <div className="text-success font-semibold text-xs">✓ Answer Key Loaded</div>
+                    <div className="text-[10px] text-textSecondary truncate max-w-[280px] mx-auto">{uploadedKeyFileName}</div>
+                  </div>
+                ) : (
+                  <div className="space-y-1 text-textSecondary text-[11px]">
+                    {uploading ? (
+                      <span className="animate-pulse">Uploading file...</span>
+                    ) : (
+                      <>
+                        <span className="text-2xl block mb-1">🔑</span>
+                        <span className="text-primaryAccent font-semibold hover:underline">Click to upload</span> Answer Key PDF
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-borderLight">
+              <Button variant="ghost" size="sm" onClick={() => setShowUploadModal(false)} disabled={uploading}>
+                Cancel
+              </Button>
+              <Button 
+                size="sm" 
+                onClick={() => {
+                  setShowUploadModal(false);
+                  handleAutoExtract(uploadedKeyPdfId);
+                }} 
+                disabled={uploading}
+              >
+                Extract Answers
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

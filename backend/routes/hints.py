@@ -17,8 +17,11 @@ class HintRequest(BaseModel):
 
 @router.post("")
 async def get_hint(request: HintRequest, user_id: PyObjectId = Depends(get_current_user_id)):
+    from bson import ObjectId
+    session_id = request.session_id
+    session_q = {"$in": [session_id, ObjectId(session_id)]} if ObjectId.is_valid(session_id) else session_id
     session = await app.mongodb["sessions"].find_one(
-        {"_id": PyObjectId(request.session_id), "user_id": user_id}
+        {"_id": session_q, "user_id": user_id}
     )
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")

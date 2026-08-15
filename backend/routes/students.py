@@ -86,7 +86,7 @@ async def start_recommendation(rec_id: str, user_id: PyObjectId = Depends(get_cu
     session_id = session_result.inserted_id
     
     await app.mongodb["recommendations"].update_one(
-        {"_id": PyObjectId(rec_id)},
+        {"_id": rec_q},
         {"$set": {"status": "attempted", "session_id": session_id}}
     )
     

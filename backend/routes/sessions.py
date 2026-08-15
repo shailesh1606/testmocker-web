@@ -33,7 +33,9 @@ async def get_sessions(limit: int = 10, user_id: PyObjectId = Depends(get_curren
 
 @router.get("/{session_id}")
 async def get_session(session_id: str, user_id: PyObjectId = Depends(get_current_user_id)):
-    session = await app.mongodb["sessions"].find_one({"_id": PyObjectId(session_id), "user_id": user_id})
+    from bson import ObjectId
+    session_q = {"$in": [session_id, ObjectId(session_id)]} if ObjectId.is_valid(session_id) else session_id
+    session = await app.mongodb["sessions"].find_one({"_id": session_q, "user_id": user_id})
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     session["_id"] = str(session["_id"])
@@ -43,9 +45,11 @@ async def get_session(session_id: str, user_id: PyObjectId = Depends(get_current
 
 @router.patch("/{session_id}/answer")
 async def patch_answer(session_id: str, patch: AnswerPatch, user_id: PyObjectId = Depends(get_current_user_id)):
+    from bson import ObjectId
+    session_q = {"$in": [session_id, ObjectId(session_id)]} if ObjectId.is_valid(session_id) else session_id
     # Simple array update via index
     result = await app.mongodb["sessions"].update_one(
-        {"_id": PyObjectId(session_id), "user_id": user_id},
+        {"_id": session_q, "user_id": user_id},
         {"$set": {f"answers.{patch.question_index}": patch.answer}}
     )
     if result.modified_count == 0:
@@ -55,13 +59,16 @@ async def patch_answer(session_id: str, patch: AnswerPatch, user_id: PyObjectId 
 @router.post("/{session_id}/submit")
 async def submit_session(session_id: str, data: SessionSubmit, user_id: PyObjectId = Depends(get_current_user_id)):
     from datetime import datetime
+    from bson import ObjectId
     answers_dicts = [a.dict() if a else None for a in data.answers]
     
-    session = await app.mongodb["sessions"].find_one({"_id": PyObjectId(session_id), "user_id": user_id})
+    session_q = {"$in": [session_id, ObjectId(session_id)]} if ObjectId.is_valid(session_id) else session_id
+    session = await app.mongodb["sessions"].find_one({"_id": session_q, "user_id": user_id})
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
         
     correct_answers = session.get("correct_answers")
+    
     if correct_answers:
         results = calculate_score(
             answers_dicts,
@@ -80,11 +87,11 @@ async def submit_session(session_id: str, data: SessionSubmit, user_id: PyObject
             "results": results
         }
         await app.mongodb["sessions"].update_one(
-            {"_id": PyObjectId(session_id), "user_id": user_id},
+            {"_id": session_q, "user_id": user_id},
             {"$set": update_data}
         )
         await app.mongodb["recommendations"].update_one(
-            {"session_id": PyObjectId(session_id)},
+            {"session_id": session_q},
             {"$set": {"status": "completed"}}
         )
         return {"status": "completed", "auto_graded": True}
@@ -98,18 +105,20 @@ async def submit_session(session_id: str, data: SessionSubmit, user_id: PyObject
         "submitted_at": datetime.utcnow()
     }
     await app.mongodb["sessions"].update_one(
-        {"_id": PyObjectId(session_id), "user_id": user_id},
+        {"_id": session_q, "user_id": user_id},
         {"$set": update_data}
     )
     await app.mongodb["recommendations"].update_one(
-        {"session_id": PyObjectId(session_id)},
+        {"session_id": session_q},
         {"$set": {"status": "attempted"}}
     )
     return {"status": "submitted", "auto_graded": False}
 
 @router.post("/{session_id}/answer-key")
 async def submit_answer_key(session_id: str, data: AnswerKeySubmit, user_id: PyObjectId = Depends(get_current_user_id)):
-    session = await app.mongodb["sessions"].find_one({"_id": PyObjectId(session_id), "user_id": user_id})
+    from bson import ObjectId
+    session_q = {"$in": [session_id, ObjectId(session_id)]} if ObjectId.is_valid(session_id) else session_id
+    session = await app.mongodb["sessions"].find_one({"_id": session_q, "user_id": user_id})
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
         
@@ -125,7 +134,7 @@ async def submit_answer_key(session_id: str, data: AnswerKeySubmit, user_id: PyO
     )
     
     await app.mongodb["sessions"].update_one(
-        {"_id": PyObjectId(session_id)},
+        {"_id": session_q},
         {
             "$set": {
                 "correct_answers": correct_answers_dicts,

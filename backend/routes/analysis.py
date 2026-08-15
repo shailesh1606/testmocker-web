@@ -8,7 +8,9 @@ router = APIRouter(prefix="/api/analysis", tags=["analysis"])
 
 @router.post("/topics/{session_id}")
 async def analyze_topics(session_id: str, user_id: PyObjectId = Depends(get_current_user_id)):
-    session = await app.mongodb["sessions"].find_one({"_id": PyObjectId(session_id), "user_id": user_id})
+    from bson import ObjectId
+    session_q = {"$in": [session_id, ObjectId(session_id)]} if ObjectId.is_valid(session_id) else session_id
+    session = await app.mongodb["sessions"].find_one({"_id": session_q, "user_id": user_id})
     if not session:
         raise HTTPException(status_code=404)
         

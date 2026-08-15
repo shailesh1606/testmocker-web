@@ -138,6 +138,8 @@ export default function TestPage({ params }: { params: { sessionId: string } }) 
 
   const cAns = answers[currentIndex];
   const cType = session.question_types[currentIndex] || "mcq";
+  const optionFormat = session.option_format || "ABCD";
+  const mcqOptions = optionFormat === '1234' ? ['1', '2', '3', '4'] : optionFormat === 'abcd' ? ['a', 'b', 'c', 'd'] : ['A', 'B', 'C', 'D'];
 
   return (
     <div className="flex flex-col min-h-screen bg-pageBg w-full">
@@ -197,9 +199,9 @@ export default function TestPage({ params }: { params: { sessionId: string } }) 
             </div>
             
             <div className="flex-1 flex flex-col justify-center">
-              {cType === 'mcq' && (
+               {cType === 'mcq' && (
                 <div className="flex flex-col gap-3">
-                  {['A', 'B', 'C', 'D'].map(opt => (
+                  {mcqOptions.map(opt => (
                     <button
                       key={opt}
                       onClick={() => handleUpdateCurrentAnswer(opt)}

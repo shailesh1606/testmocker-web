@@ -47,6 +47,7 @@ class SessionInDB(BaseModel):
     hints_used: Dict[str, int] = {} # { "0": 1 }
     time_taken_seconds: Optional[int] = None
     time_per_question: List[int] = []
+    option_format: str = "ABCD"
     created_at: datetime = Field(default_factory=datetime.utcnow)
     submitted_at: Optional[datetime] = None
     score: Optional[float] = None

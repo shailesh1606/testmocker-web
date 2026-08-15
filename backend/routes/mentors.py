@@ -21,6 +21,7 @@ class MentorTestCreate(BaseModel):
     pdf_id: str
     answer_key_pdf_id: Optional[str] = None
     correct_answers: List[Optional[dict]] = []
+    option_format: str = "ABCD"
 
 class RecommendRequest(BaseModel):
     test_id: str
@@ -56,8 +57,8 @@ async def mentor_extract_answers(data: MentorExtractRequest, user_id: PyObjectId
         ak_path = ak_doc["storage_path"]
         
     try:
-        answers = await extract_answers_from_pdf(qp_path, ak_path, data.num_questions)
-        return {"answers": answers}
+        answers, option_format = await extract_answers_from_pdf(qp_path, ak_path, data.num_questions)
+        return {"answers": answers, "option_format": option_format}
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Answer extraction failed: {str(e)}")
 
@@ -99,6 +100,7 @@ async def create_mentor_test(data: MentorTestCreate, user_id: PyObjectId = Depen
         "pdf_id": PyObjectId(data.pdf_id),
         "answer_key_pdf_id": PyObjectId(data.answer_key_pdf_id) if data.answer_key_pdf_id else None,
         "correct_answers": data.correct_answers,
+        "option_format": data.option_format,
         "created_at": datetime.utcnow()
     }
     

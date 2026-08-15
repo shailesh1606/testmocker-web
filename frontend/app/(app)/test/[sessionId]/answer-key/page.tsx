@@ -8,14 +8,15 @@ import { useToast } from '@/components/ui/ToastProvider';
 export default function AnswerKeyPage({ params }: { params: { sessionId: string } }) {
   const router = useRouter();
   const { addToast } = useToast();
-  
+
   const [session, setSession] = useState<any>(null);
   const [correctAnswers, setCorrectAnswers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
+  const [optionFormat, setOptionFormat] = useState('ABCD');
+
   // Extraction state
   const [extracting, setExtracting] = useState(false);
-  const [activeTab, setActiveTab] = useState<'manual'|'auto'>('manual');
+  const [activeTab, setActiveTab] = useState<'manual' | 'auto'>('manual');
   const [showUploadModal, setShowUploadModal] = useState(false);
 
   // Upload state
@@ -31,6 +32,7 @@ export default function AnswerKeyPage({ params }: { params: { sessionId: string 
         const data = await res.json();
         if (!res.ok) throw new Error();
         setSession(data);
+        setOptionFormat(data.option_format || "ABCD");
         setCorrectAnswers(Array(data.num_questions).fill(null).map((_, i) => ({
           type: data.question_types?.[i] || "mcq",
           value: ""
@@ -89,11 +91,12 @@ export default function AnswerKeyPage({ params }: { params: { sessionId: string 
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Failed to extract answers");
-      
+
       setCorrectAnswers(data.answers);
+      setOptionFormat(data.option_format || "ABCD");
       addToast("Successfully extracted answers!", "success");
       setActiveTab('manual');
-    } catch(err: any) {
+    } catch (err: any) {
       addToast(err.message || "Failed to auto-extract answer key.", "error");
     } finally {
       setExtracting(false);
@@ -105,21 +108,23 @@ export default function AnswerKeyPage({ params }: { params: { sessionId: string 
       const payload = {
         correct_answers: correctAnswers.map(c => c.value ? c : null)
       };
-      
+
       const res = await fetch(`/api/sessions/${params.sessionId}/answer-key`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
       if (!res.ok) throw new Error();
-      
+
       router.push(`/results/${params.sessionId}`);
-    } catch(err) {
+    } catch (err) {
       addToast("Failed to submit answer key", "error");
     }
   };
 
   if (loading) return <div className="p-10 text-center">Loading...</div>;
+
+  const mcqOptions = optionFormat === '1234' ? ['1', '2', '3', '4'] : optionFormat === 'abcd' ? ['a', 'b', 'c', 'd'] : ['A', 'B', 'C', 'D'];
 
   return (
     <div className="min-h-screen bg-pageBg p-6 pt-16 flex justify-center">
@@ -131,13 +136,13 @@ export default function AnswerKeyPage({ params }: { params: { sessionId: string 
 
         <div className="bg-white rounded-lg shadow-sm border border-borderLight overflow-hidden">
           <div className="flex border-b border-borderLight">
-            <button 
+            <button
               className={`flex-1 py-4 font-medium text-sm transition-colors ${activeTab === 'manual' ? 'text-primaryAccent border-b-2 border-primaryAccent' : 'text-textSecondary hover:bg-pageBg'}`}
               onClick={() => setActiveTab('manual')}
             >
               Manual Entry
             </button>
-            <button 
+            <button
               className={`flex-1 py-4 font-medium text-sm transition-colors ${activeTab === 'auto' ? 'text-primaryAccent border-b-2 border-primaryAccent' : 'text-textSecondary hover:bg-pageBg'}`}
               onClick={() => setActiveTab('auto')}
             >
@@ -172,7 +177,7 @@ export default function AnswerKeyPage({ params }: { params: { sessionId: string 
                         <tr key={idx} className={`border-b border-borderLight h-10 ${idx % 2 !== 0 ? 'bg-pageBg/30' : ''}`}>
                           <td className="py-2 px-4 text-sm font-medium">{idx + 1}</td>
                           <td className="py-2 px-4">
-                            <select 
+                            <select
                               className="text-xs border rounded p-1 w-full bg-white outline-none focus:border-primaryAccent"
                               value={ca.type}
                               onChange={(e) => handleUpdate(idx, 'type', e.target.value)}
@@ -185,7 +190,7 @@ export default function AnswerKeyPage({ params }: { params: { sessionId: string 
                           <td className="py-2 px-4 min-w-[200px]">
                             {ca.type === 'mcq' ? (
                               <div className="flex bg-pageBg border border-borderLight rounded self-start inline-flex">
-                                {['A', 'B', 'C', 'D'].map(opt => (
+                                {mcqOptions.map(opt => (
                                   <button
                                     key={opt}
                                     onClick={() => handleUpdate(idx, 'value', opt)}
@@ -196,7 +201,7 @@ export default function AnswerKeyPage({ params }: { params: { sessionId: string 
                                 ))}
                               </div>
                             ) : (
-                              <input 
+                              <input
                                 className="border rounded px-2 py-1 flex-1 text-sm outline-none focus:border-primaryAccent w-full text-textPrimary"
                                 value={ca.value || ''}
                                 onChange={(e) => handleUpdate(idx, 'value', e.target.value)}
@@ -209,7 +214,7 @@ export default function AnswerKeyPage({ params }: { params: { sessionId: string 
                     </tbody>
                   </table>
                 </div>
-                
+
                 <div className="mt-8 pt-4 border-t border-borderLight">
                   <Button fullWidth onClick={handleSubmit}>View Results</Button>
                 </div>
@@ -232,15 +237,15 @@ export default function AnswerKeyPage({ params }: { params: { sessionId: string 
 
             <div className="space-y-2">
               <label className="text-xs font-bold text-textPrimary block">Answer Key PDF (Optional)</label>
-              <div 
+              <div
                 onClick={() => !uploading && fileInputRef.current?.click()}
                 className={`border-2 border-dashed border-borderLight rounded-lg p-6 text-center cursor-pointer hover:bg-pageBg/40 transition-colors ${uploadedKeyPdfId ? 'border-success bg-success/5' : ''}`}
               >
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
+                <input
+                  type="file"
+                  ref={fileInputRef}
                   onChange={(e) => e.target.files?.[0] && handleUploadKeyFile(e.target.files[0])}
-                  className="hidden" 
+                  className="hidden"
                   accept="application/pdf"
                   disabled={uploading}
                 />
@@ -268,12 +273,12 @@ export default function AnswerKeyPage({ params }: { params: { sessionId: string 
               <Button variant="ghost" size="sm" onClick={() => setShowUploadModal(false)} disabled={uploading}>
                 Cancel
               </Button>
-              <Button 
-                size="sm" 
+              <Button
+                size="sm"
                 onClick={() => {
                   setShowUploadModal(false);
                   handleAutoExtract(uploadedKeyPdfId);
-                }} 
+                }}
                 disabled={uploading}
               >
                 Extract Answers

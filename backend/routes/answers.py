@@ -30,7 +30,9 @@ async def auto_extract_answer_key(
     if not qp_pdf_id:
         raise HTTPException(status_code=400, detail="No question paper PDF linked to this session")
         
-    qp_doc = await app.mongodb["pdf_files"].find_one({"_id": qp_pdf_id})
+    qp_pdf_id_str = str(qp_pdf_id)
+    qp_pdf_q = {"$in": [qp_pdf_id_str, ObjectId(qp_pdf_id_str)]} if ObjectId.is_valid(qp_pdf_id_str) else qp_pdf_id
+    qp_doc = await app.mongodb["pdf_files"].find_one({"_id": qp_pdf_q})
     if not qp_doc:
         raise HTTPException(status_code=404, detail="Question paper PDF metadata not found")
     qp_path = qp_doc["storage_path"]
@@ -45,7 +47,11 @@ async def auto_extract_answer_key(
         ak_path = ak_doc["storage_path"]
         
     try:
-        extracted = await extract_answers_from_pdf(qp_path, ak_path, num_questions)
-        return {"answers": extracted}
+        extracted, option_format = await extract_answers_from_pdf(qp_path, ak_path, num_questions)
+        await app.mongodb["sessions"].update_one(
+            {"_id": session_q, "user_id": user_id},
+            {"$set": {"option_format": option_format}}
+        )
+        return {"answers": extracted, "option_format": option_format}
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Answer extraction failed: {str(e)}")

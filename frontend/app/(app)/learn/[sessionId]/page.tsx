@@ -159,6 +159,8 @@ export default function LearnPage({ params }: { params: { sessionId: string } })
   const cAns = answers[currentIndex];
   const cType = session.question_types[currentIndex] || "mcq";
   const usedHintCount = hintsUsed[currentIndex] || 0;
+  const optionFormat = session.option_format || "ABCD";
+  const mcqOptions = optionFormat === '1234' ? ['1', '2', '3', '4'] : optionFormat === 'abcd' ? ['a', 'b', 'c', 'd'] : ['A', 'B', 'C', 'D'];
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-pageBg w-full">
@@ -216,7 +218,7 @@ export default function LearnPage({ params }: { params: { sessionId: string } })
             <div className="flex-1 flex flex-col">
               {cType === 'mcq' && (
                 <div className="flex flex-col gap-3">
-                  {['A', 'B', 'C', 'D'].map(opt => (
+                  {mcqOptions.map(opt => (
                     <button
                       key={opt}
                       onClick={() => handleUpdateCurrentAnswer(opt)}

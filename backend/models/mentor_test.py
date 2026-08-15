@@ -16,6 +16,7 @@ class MentorTestInDB(BaseModel):
     pdf_id: PyObjectId
     answer_key_pdf_id: Optional[PyObjectId] = None
     correct_answers: List[Optional[dict]] = []
+    option_format: str = "ABCD"
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     model_config = {

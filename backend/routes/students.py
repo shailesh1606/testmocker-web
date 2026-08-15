@@ -73,6 +73,7 @@ async def start_recommendation(rec_id: str, user_id: PyObjectId = Depends(get_cu
         "marks_per_correct": test["marks_per_correct"],
         "negative_mark": test["negative_mark"],
         "mode": "test",
+        "option_format": test.get("option_format", "ABCD"),
         "question_types": ["mcq"] * test["num_questions"],
         "answers": [None] * test["num_questions"],
         "correct_answers": test.get("correct_answers", []),

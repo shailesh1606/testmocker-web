@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/ToastProvider';
+import { useAuth } from '@/context/AuthContext';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -15,6 +16,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { addToast } = useToast();
+  const { login } = useAuth();
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,7 +32,7 @@ export default function RegisterPage() {
       if (!res.ok) throw new Error(data.detail || "Registration failed");
       
       addToast("Registration successful!", 'success');
-      router.push('/dashboard');
+      await login();
     } catch (err: any) {
       addToast(err.message, 'error');
     } finally {

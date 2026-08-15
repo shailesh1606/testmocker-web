@@ -3,27 +3,14 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [role, setRole] = useState<'STUDENT' | 'MENTOR' | null>(null);
-
-  React.useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const res = await fetch('/api/auth/me');
-        if (res.ok) {
-          const data = await res.json();
-          setRole(data.role);
-        }
-      } catch (e) {
-        console.error("Failed to load user in sidebar", e);
-      }
-    };
-    loadUser();
-  }, []);
+  const { user, logout } = useAuth();
+  const role = user?.role || null;
 
   const menu = role === 'MENTOR' ? [
     { label: 'Dashboard', href: '/dashboard', icon: '🏠' },
@@ -36,8 +23,7 @@ export function Sidebar() {
   ];
 
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    router.push('/login');
+    await logout();
   };
 
   const desktopCls = "hidden md:flex flex-col w-[240px] bg-sidebarDark text-sidebarText min-h-screen border-r border-sidebarDark/50 pt-6";

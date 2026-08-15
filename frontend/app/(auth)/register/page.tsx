@@ -11,6 +11,7 @@ export default function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('STUDENT');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { addToast } = useToast();
@@ -22,7 +23,7 @@ export default function RegisterPage() {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password })
+        body: JSON.stringify({ name, email, password, role })
       });
       const data = await res.json();
       
@@ -55,6 +56,17 @@ export default function RegisterPage() {
             onChange={e => setEmail(e.target.value)} 
             required 
           />
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-textPrimary">I am a</label>
+            <select
+              value={role}
+              onChange={e => setRole(e.target.value)}
+              className="w-full px-3 py-2 border border-borderLight rounded text-sm bg-white focus:outline-none focus:border-primaryAccent focus:ring-1 focus:ring-primaryAccent"
+            >
+              <option value="STUDENT">Student</option>
+              <option value="MENTOR">Mentor</option>
+            </select>
+          </div>
           <Input 
             label="Password" 
             type="password" 

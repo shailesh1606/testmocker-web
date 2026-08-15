@@ -56,6 +56,39 @@ async def patch_answer(session_id: str, patch: AnswerPatch, user_id: PyObjectId 
 async def submit_session(session_id: str, data: SessionSubmit, user_id: PyObjectId = Depends(get_current_user_id)):
     from datetime import datetime
     answers_dicts = [a.dict() if a else None for a in data.answers]
+    
+    session = await app.mongodb["sessions"].find_one({"_id": PyObjectId(session_id), "user_id": user_id})
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+        
+    correct_answers = session.get("correct_answers")
+    if correct_answers:
+        results = calculate_score(
+            answers_dicts,
+            correct_answers,
+            session["marks_per_correct"],
+            session["negative_mark"]
+        )
+        update_data = {
+            "status": "completed",
+            "answers": answers_dicts,
+            "question_types": data.question_types,
+            "time_taken_seconds": data.time_taken_seconds,
+            "time_per_question": data.time_per_question,
+            "submitted_at": datetime.utcnow(),
+            "score": results["score"],
+            "results": results
+        }
+        await app.mongodb["sessions"].update_one(
+            {"_id": PyObjectId(session_id), "user_id": user_id},
+            {"$set": update_data}
+        )
+        await app.mongodb["recommendations"].update_one(
+            {"session_id": PyObjectId(session_id)},
+            {"$set": {"status": "completed"}}
+        )
+        return {"status": "completed", "auto_graded": True}
+        
     update_data = {
         "status": "submitted",
         "answers": answers_dicts,
@@ -68,7 +101,11 @@ async def submit_session(session_id: str, data: SessionSubmit, user_id: PyObject
         {"_id": PyObjectId(session_id), "user_id": user_id},
         {"$set": update_data}
     )
-    return {"status": "submitted"}
+    await app.mongodb["recommendations"].update_one(
+        {"session_id": PyObjectId(session_id)},
+        {"$set": {"status": "attempted"}}
+    )
+    return {"status": "submitted", "auto_graded": False}
 
 @router.post("/{session_id}/answer-key")
 async def submit_answer_key(session_id: str, data: AnswerKeySubmit, user_id: PyObjectId = Depends(get_current_user_id)):

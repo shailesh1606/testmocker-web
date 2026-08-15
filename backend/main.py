@@ -51,7 +51,7 @@ async def startup_db_client():
 async def shutdown_db_client():
     app.mongodb_client.close()
 
-from routes import auth, pdf, sessions, answers, hints, analysis
+from routes import auth, pdf, sessions, answers, hints, analysis, mentors, students
 
 app.include_router(auth.router)
 app.include_router(pdf.router)
@@ -59,3 +59,5 @@ app.include_router(sessions.router)
 app.include_router(answers.router)
 app.include_router(hints.router)
 app.include_router(analysis.router)
+app.include_router(mentors.router)
+app.include_router(students.router)

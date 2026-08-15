@@ -8,8 +8,28 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [role, setRole] = useState<'STUDENT' | 'MENTOR' | null>(null);
 
-  const menu = [
+  React.useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+          const data = await res.json();
+          setRole(data.role);
+        }
+      } catch (e) {
+        console.error("Failed to load user in sidebar", e);
+      }
+    };
+    loadUser();
+  }, []);
+
+  const menu = role === 'MENTOR' ? [
+    { label: 'Dashboard', href: '/dashboard', icon: '🏠' },
+    { label: 'Create Test', href: '/mentor/create-test', icon: '➕' },
+    { label: 'My Assignments', href: '/mentor/assignments', icon: '📋' }
+  ] : [
     { label: 'Dashboard', href: '/dashboard', icon: '🏠' },
     { label: 'My Tests', href: '/tests', icon: '📋' },
     { label: 'New Test', href: '/test/new', icon: '➕' }

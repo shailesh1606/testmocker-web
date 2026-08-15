@@ -118,7 +118,7 @@ export default function LearnPage({ params }: { params: { sessionId: string } })
     try {
       flush();
       const timePerQuestion = getTimePerQuestion();
-      await fetch(`/api/sessions/${params.sessionId}/submit`, {
+      const res = await fetch(`/api/sessions/${params.sessionId}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -128,7 +128,12 @@ export default function LearnPage({ params }: { params: { sessionId: string } })
           time_per_question: timePerQuestion,
         })
       });
-      router.push(`/test/${params.sessionId}/answer-key`);
+      const data = await res.json();
+      if (data.status === 'completed' || data.auto_graded) {
+        router.push(`/results/${params.sessionId}`);
+      } else {
+        router.push(`/test/${params.sessionId}/answer-key`);
+      }
     } catch (err) {
       addToast("Failed to finish", "error");
     }

@@ -34,6 +34,7 @@ class PyObjectId(str):
 class UserBase(BaseModel):
     name: str
     email: EmailStr
+    role: str = "STUDENT"
 
 class UserCreate(UserBase):
     password: str

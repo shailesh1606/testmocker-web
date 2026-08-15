@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from models.user import UserCreate, UserLogin, UserInDB
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 import jwt
 from config import settings
 from main import app
+from middleware.auth_middleware import get_current_user_id
+from models.user import UserCreate, UserLogin, UserInDB, PyObjectId
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -27,8 +28,8 @@ async def register(user: UserCreate):
     
     result = await app.mongodb["users"].insert_one(user_db.dict(by_alias=True))
     
-    access_token = create_access_token(data={"sub": str(result.inserted_id)})
-    return {"access_token": access_token}
+    access_token = create_access_token(data={"sub": str(result.inserted_id), "role": user.role})
+    return {"access_token": access_token, "role": user.role}
 
 @router.post("/login")
 async def login(user: UserLogin):
@@ -36,5 +37,19 @@ async def login(user: UserLogin):
     if not user_doc or not pwd_context.verify(user.password, user_doc["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
-    access_token = create_access_token(data={"sub": str(user_doc["_id"])})
-    return {"access_token": access_token}
+    role = user_doc.get("role", "STUDENT")
+    access_token = create_access_token(data={"sub": str(user_doc["_id"]), "role": role})
+    return {"access_token": access_token, "role": role}
+
+@router.get("/me")
+async def get_me(user_id: PyObjectId = Depends(get_current_user_id)):
+    user_doc = await app.mongodb["users"].find_one({"_id": user_id})
+    if not user_doc:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {
+        "id": str(user_doc["_id"]),
+        "name": user_doc["name"],
+        "email": user_doc["email"],
+        "role": user_doc.get("role", "STUDENT"),
+        "created_at": user_doc["created_at"]
+    }

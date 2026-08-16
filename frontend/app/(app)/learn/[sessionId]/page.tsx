@@ -168,7 +168,7 @@ export default function LearnPage({ params }: { params: { sessionId: string } })
         <div className="flex items-center gap-4">
           <Link href="/" className="font-bold text-textPrimary flex items-center gap-2 hover:opacity-90 transition-opacity">
             TestMocker <span className="w-1.5 h-1.5 rounded-full bg-review inline-block" />
-            <span className="ml-2 font-medium text-xs rounded border border-review text-review px-2 uppercase text-xs hidden md:inline-block">Learning Mode</span>
+            <span className="ml-2 font-medium rounded border border-review text-review px-2 uppercase text-xs hidden md:inline-block">Learning Mode</span>
           </Link>
         </div>
         <div className="flex items-center gap-4">

@@ -189,7 +189,7 @@ export default function AnswerKeyPage({ params }: { params: { sessionId: string 
                           </td>
                           <td className="py-2 px-4 min-w-[200px]">
                             {ca.type === 'mcq' ? (
-                              <div className="flex bg-pageBg border border-borderLight rounded self-start inline-flex">
+                              <div className=" bg-pageBg border border-borderLight rounded self-start inline-flex">
                                 {mcqOptions.map(opt => (
                                   <button
                                     key={opt}

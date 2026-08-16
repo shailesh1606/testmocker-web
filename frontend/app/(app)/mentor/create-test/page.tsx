@@ -118,7 +118,7 @@ export default function CreateTestPage() {
       if (!res.ok) throw new Error(data.detail || "Student not found");
       setFoundStudent(data);
       addToast("Student verified successfully!", "success");
-    } catch(err: any) {
+    } catch (err: any) {
       addToast(err.message, "error");
     } finally {
       setSearchingStudent(false);
@@ -225,7 +225,7 @@ export default function CreateTestPage() {
       <Sidebar />
       <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden">
         <TopBar title="Create & Assign Mock Test" />
-        
+
         <div className="p-6 md:p-10 flex-1 w-full max-w-3xl mx-auto animate-fade-in">
           {/* Progress Indicator */}
           <div className="flex items-center justify-between mb-8 text-sm font-semibold border-b border-borderLight pb-4 flex-wrap gap-2">
@@ -249,15 +249,15 @@ export default function CreateTestPage() {
               {/* Question Paper PDF */}
               <div className="space-y-2">
                 <label className="text-sm font-bold text-textPrimary block">Question Paper PDF *</label>
-                <div 
+                <div
                   onClick={() => qpInputRef.current?.click()}
                   className="border-2 border-dashed border-borderLight rounded-lg p-6 text-center cursor-pointer hover:bg-pageBg/40 transition-colors"
                 >
-                  <input 
-                    type="file" 
-                    ref={qpInputRef} 
+                  <input
+                    type="file"
+                    ref={qpInputRef}
                     onChange={(e) => e.target.files?.[0] && handleUploadFile(e.target.files[0], 'qp')}
-                    className="hidden" 
+                    className="hidden"
                     accept="application/pdf"
                   />
                   {qpFileName ? (
@@ -277,15 +277,15 @@ export default function CreateTestPage() {
               {/* Answer Key PDF */}
               <div className="space-y-2">
                 <label className="text-sm font-bold text-textPrimary block">Answer Key PDF (Optional)</label>
-                <div 
+                <div
                   onClick={() => akInputRef.current?.click()}
                   className="border-2 border-dashed border-borderLight rounded-lg p-6 text-center cursor-pointer hover:bg-pageBg/40 transition-colors"
                 >
-                  <input 
-                    type="file" 
-                    ref={akInputRef} 
+                  <input
+                    type="file"
+                    ref={akInputRef}
                     onChange={(e) => e.target.files?.[0] && handleUploadFile(e.target.files[0], 'ak')}
-                    className="hidden" 
+                    className="hidden"
                     accept="application/pdf"
                   />
                   {akFileName ? (
@@ -304,9 +304,9 @@ export default function CreateTestPage() {
               </div>
 
               <div className="flex justify-end pt-4 border-t border-borderLight/60">
-                <Button 
-                  onClick={() => setStep(2)} 
-                  disabled={!qpPdfId || loading} 
+                <Button
+                  onClick={() => setStep(2)}
+                  disabled={!qpPdfId || loading}
                   className="px-6"
                 >
                   Configure Test Settings
@@ -420,7 +420,7 @@ export default function CreateTestPage() {
                           <tr key={idx} className={`border-b border-borderLight h-10 ${idx % 2 !== 0 ? 'bg-pageBg/30' : ''}`}>
                             <td className="py-2 px-4 font-medium">{idx + 1}</td>
                             <td className="py-2 px-4">
-                              <select 
+                              <select
                                 className="text-xs border rounded p-1 w-full bg-white outline-none focus:border-primaryAccent"
                                 value={ca.type}
                                 onChange={(e) => handleUpdateAnswer(idx, 'type', e.target.value)}
@@ -432,7 +432,7 @@ export default function CreateTestPage() {
                             </td>
                             <td className="py-2 px-4 min-w-[200px]">
                               {ca.type === 'mcq' ? (
-                                <div className="flex bg-pageBg border border-borderLight rounded self-start inline-flex">
+                                <div className=" bg-pageBg border border-borderLight rounded self-start inline-flex">
                                   {mcqOptions.map(opt => (
                                     <button
                                       key={opt}
@@ -445,7 +445,7 @@ export default function CreateTestPage() {
                                   ))}
                                 </div>
                               ) : (
-                                <input 
+                                <input
                                   className="border rounded px-2 py-1 text-sm outline-none focus:border-primaryAccent w-full text-textPrimary bg-white"
                                   value={ca.value || ''}
                                   onChange={(e) => handleUpdateAnswer(idx, 'value', e.target.value)}
@@ -486,10 +486,10 @@ export default function CreateTestPage() {
                       onChange={e => setStudentQuery(e.target.value)}
                     />
                   </div>
-                  <Button 
-                    type="button" 
-                    onClick={handleLookup} 
-                    disabled={searchingStudent} 
+                  <Button
+                    type="button"
+                    onClick={handleLookup}
+                    disabled={searchingStudent}
                     className="self-end h-[42px] px-6"
                   >
                     {searchingStudent ? 'Verifying...' : 'Verify'}
@@ -513,9 +513,9 @@ export default function CreateTestPage() {
 
               <div className="flex justify-between pt-4 border-t border-borderLight/60">
                 <Button variant="ghost" onClick={() => setStep(3)}>Back</Button>
-                <Button 
-                  onClick={handleFinishAndRecommend} 
-                  disabled={loading || !foundStudent} 
+                <Button
+                  onClick={handleFinishAndRecommend}
+                  disabled={loading || !foundStudent}
                   className="px-6"
                 >
                   {loading ? 'Assigning...' : 'Create & Assign Test'}

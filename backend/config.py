@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     jwt_expire_hours: int = 48
     openai_api_key: str = "dummy_key"
     pdf_storage_path: str = "./uploads"
+    encryption_key: str = "default_encryption_secret_key"
 
     class Config:
         env_file = ".env"

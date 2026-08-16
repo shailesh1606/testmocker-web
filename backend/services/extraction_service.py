@@ -168,7 +168,9 @@ async def run_openai_extraction(
                 f"Please solve or extract exactly {num_questions} questions."
             )
 
-    response = openai.chat.completions.create(
+    from openai import OpenAI
+    client = OpenAI(api_key=actual_key)
+    response = client.chat.completions.create(
         model="gpt-4o",
         response_format={"type": "json_object"},
         messages=[
@@ -197,6 +199,18 @@ async def extract_answers_from_pdf(qp_path: str, ak_path: Optional[str], num_que
     if ak_path and not ak_is_meaningful:
         print("Answer Key PDF text was insufficient. Rendering PDF to images for vision extraction...")
         ak_images = render_pdf_to_images(ak_path)
+
+    user_api_key = None
+    if user_id:
+        from main import app
+        from bson import ObjectId
+        user_q = {"$in": [user_id, ObjectId(user_id)]} if ObjectId.is_valid(user_id) else user_id
+        user = await app.mongodb["users"].find_one({"_id": user_q})
+        if user:
+            encrypted_key = user.get("openai_api_key")
+            if encrypted_key:
+                from services.crypto_service import decrypt_api_key
+                user_api_key = decrypt_api_key(encrypted_key)
         
     option_format = "ABCD"
     try:
@@ -205,7 +219,8 @@ async def extract_answers_from_pdf(qp_path: str, ak_path: Optional[str], num_que
             ak_text if ak_is_meaningful else None,
             num_questions,
             qp_images,
-            ak_images
+            ak_images,
+            api_key=user_api_key
         )
         questions = result_json.get("questions", [])
         option_format = result_json.get("option_format", "ABCD")

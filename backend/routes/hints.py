@@ -34,11 +34,20 @@ async def get_hint(request: HintRequest, user_id: PyObjectId = Depends(get_curre
     if "," in img_data[:50]:
         img_data = img_data.split(",", 1)[1]
 
-    if not settings.openai_api_key or settings.openai_api_key == "dummy_key":
+    user_doc = await app.mongodb["users"].find_one({"_id": user_id})
+    encrypted_key = user_doc.get("openai_api_key") if user_doc else None
+    
+    from services.crypto_service import decrypt_api_key
+    key = decrypt_api_key(encrypted_key) if encrypted_key else None
+    api_key = key or settings.openai_api_key
+
+    if not api_key or api_key == "dummy_key":
         raise HTTPException(status_code=500, detail="OpenAI API key not configured")
 
     try:
-        response = openai.chat.completions.create(
+        from openai import OpenAI
+        client = OpenAI(api_key=api_key)
+        response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
                 {

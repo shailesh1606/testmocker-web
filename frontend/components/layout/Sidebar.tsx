@@ -15,12 +15,14 @@ export function Sidebar() {
   const menu = role === 'MENTOR' ? [
     { label: 'Dashboard', href: '/dashboard', icon: '🏠' },
     { label: 'Create Test', href: '/mentor/create-test', icon: '➕' },
-    { label: 'My Assignments', href: '/mentor/assignments', icon: '📋' }
+    { label: 'My Assignments', href: '/mentor/assignments', icon: '📋' },
+    { label: 'Account', href: '/account', icon: '👤' }
   ] : [
     { label: 'Dashboard', href: '/dashboard', icon: '🏠' },
     { label: 'My Tests', href: '/tests', icon: '📋' },
     { label: 'New Test', href: '/test/new', icon: '➕' },
-    { label: 'Recommended Tests', href: '/test/recommended', icon: '👨‍🏫' }
+    { label: 'Recommended Tests', href: '/test/recommended', icon: '👨‍🏫' },
+    { label: 'Account', href: '/account', icon: '👤' }
   ];
 
   const handleLogout = async () => {
@@ -36,7 +38,7 @@ export function Sidebar() {
         <Link href="/" className="px-6 pb-6 text-xl font-bold text-white flex items-center gap-2 hover:opacity-90 transition-opacity">
           TestMocker <span className="w-2 h-2 rounded-full bg-primaryAccent"></span>
         </Link>
-        
+
         <nav className="flex-1 flex flex-col gap-2 px-4">
           {menu.map((item) => {
             const active = pathname.startsWith(item.href);
@@ -47,7 +49,7 @@ export function Sidebar() {
             );
           })}
         </nav>
-        
+
         <div className="p-4">
           <button onClick={handleLogout} className="flex items-center gap-3 w-full px-4 py-3 text-sm text-sidebarText hover:text-white hover:bg-sidebarDark/80 rounded transition-colors text-left font-medium">
             <span>🚪</span> Logout

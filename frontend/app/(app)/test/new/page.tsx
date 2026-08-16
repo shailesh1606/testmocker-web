@@ -13,14 +13,14 @@ export default function NewTestWizard() {
   const [step, setStep] = useState(1);
   const [pdfId, setPdfId] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
-  
+
   const [examType, setExamType] = useState('JEE Mains');
   const [numQuestions, setNumQuestions] = useState(75);
   const [totalTime, setTotalTime] = useState(180);
   const [mpc, setMpc] = useState(4.0);
   const [nmpw, setNmpw] = useState(-1.0);
-  const [mode, setMode] = useState<'test'|'learning'>('test');
-  
+  const [mode, setMode] = useState<'test' | 'learning'>('test');
+
   const [loading, setLoading] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const { addToast } = useToast();
@@ -42,26 +42,25 @@ export default function NewTestWizard() {
       addToast('Please select a PDF file.', 'error');
       return;
     }
-    
+
     setFileName(selected.name);
     setLoading(true);
     try {
       const formData = new FormData();
       formData.append('file', selected);
-      
+
       const res = await fetch('/api/pdf/upload', {
         method: 'POST',
         body: formData
         // auth token will be implicitly sent if it's the rewrite! Wait, wait... the Next rewrite to /api/ pdf upload WILL include cookies. and our py read cookie.
       });
-      
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Upload failed");
-      
+
       setPdfId(data.pdf_id);
       addToast('PDF Uploaded successfully!', 'success');
-      setStep(2);
-    } catch(err: any) {
+    } catch (err: any) {
       addToast(err.message, 'error');
       setFileName(null);
     } finally {
@@ -87,13 +86,13 @@ export default function NewTestWizard() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Failed to create session");
-      
+
       if (mode === 'learning') {
         router.push(`/learn/${data.session_id}`);
       } else {
         router.push(`/test/${data.session_id}`);
       }
-    } catch(err: any) {
+    } catch (err: any) {
       addToast(err.message, 'error');
     } finally {
       setLoading(false);
@@ -106,7 +105,7 @@ export default function NewTestWizard() {
       <div className="flex-1 flex flex-col min-h-screen">
         <TopBar title="New Test Setup" />
         <div className="p-6 flex-1 flex flex-col items-center max-w-4xl mx-auto w-full">
-          
+
           <div className="w-full mb-8 flex items-center justify-between">
             <div className={`flex-1 text-center font-medium py-2 border-b-2 ${step >= 1 ? 'border-primaryAccent text-primaryAccent' : 'border-borderLight text-textSecondary'}`}>1. Upload Paper</div>
             <div className={`flex-1 text-center font-medium py-2 border-b-2 ${step >= 2 ? 'border-primaryAccent text-primaryAccent' : 'border-borderLight text-textSecondary'}`}>2. Configure Exam</div>
@@ -116,7 +115,7 @@ export default function NewTestWizard() {
           <div className="w-full bg-white shadow-sm border border-borderLight rounded p-8">
             {step === 1 && (
               <div className="text-center">
-                <div 
+                <div
                   className={`border-2 border-dashed rounded-lg p-12 transition-colors cursor-pointer ${loading ? 'border-borderLight bg-pageBg' : 'border-primaryAccent/50 hover:bg-primaryAccent/5'}`}
                   onClick={() => !loading && fileInput.current?.click()}
                 >
@@ -149,7 +148,7 @@ export default function NewTestWizard() {
               <div className="space-y-6">
                 <div className="flex flex-col gap-1 w-full">
                   <label className="text-[13px] font-medium text-textPrimary">Exam Type</label>
-                  <select 
+                  <select
                     className="px-3 py-2 bg-white border rounded text-sm text-textPrimary border-borderLight focus:outline-none focus:border-primaryAccent focus:ring-1 focus:ring-primaryAccent"
                     value={examType} onChange={handleExamTypeChange}
                   >
@@ -159,14 +158,14 @@ export default function NewTestWizard() {
                     <option value="Custom">Custom</option>
                   </select>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <Input label="Number of Questions" type="number" value={numQuestions} onChange={e => setNumQuestions(Number(e.target.value))} />
                   <Input label="Total Time (minutes)" type="number" value={totalTime} onChange={e => setTotalTime(Number(e.target.value))} />
                   <Input label="Marks per Correct Answer" type="number" value={mpc} step="0.1" onChange={e => setMpc(Number(e.target.value))} />
                   <Input label="Negative Marks per Wrong Answer" type="number" value={nmpw} step="0.1" onChange={e => setNmpw(Number(e.target.value))} />
                 </div>
-                
+
                 <div className="flex justify-between mt-8">
                   <Button variant="ghost" onClick={() => setStep(1)}>Back</Button>
                   <Button onClick={() => setStep(3)}>Continue to Mode Selection</Button>
@@ -177,7 +176,7 @@ export default function NewTestWizard() {
             {step === 3 && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div 
+                  <div
                     className={`border-2 rounded p-6 cursor-pointer transition-colors ${mode === 'test' ? 'border-primaryAccent bg-primaryAccent/5' : 'border-borderLight hover:border-textSecondary'}`}
                     onClick={() => setMode('test')}
                   >
@@ -185,8 +184,8 @@ export default function NewTestWizard() {
                     <h3 className="font-bold text-lg mb-1">Test Mode</h3>
                     <p className="text-sm text-textSecondary">Timed exam simulation. Submit at the end for results.</p>
                   </div>
-                  
-                  <div 
+
+                  <div
                     className={`border-2 rounded p-6 cursor-pointer transition-colors ${mode === 'learning' ? 'border-primaryAccent bg-primaryAccent/5' : 'border-borderLight hover:border-textSecondary'}`}
                     onClick={() => setMode('learning')}
                   >

@@ -15,8 +15,11 @@ export function StudentDashboard({ user, sessions, recommendations }: StudentDas
   const [startingRecId, setStartingRecId] = useState<string | null>(null);
   const router = useRouter();
 
-  const bestScore = sessions.reduce((max: number, s: any) => Math.max(max, s.score || 0), 0);
-  const avgScore = sessions.length ? Math.round(sessions.reduce((sum: number, s: any) => sum + (s.score || 0), 0) / sessions.length) : 0;
+  const takenSessions = sessions.filter(s => s.status === 'completed' || s.status === 'submitted');
+  const completedSessions = sessions.filter(s => s.status === 'completed');
+
+  const bestScore = completedSessions.reduce((max: number, s: any) => Math.max(max, s.score || 0), 0);
+  const avgScore = completedSessions.length ? Math.round(completedSessions.reduce((sum: number, s: any) => sum + (s.score || 0), 0) / completedSessions.length) : 0;
 
   const handleStart = async (recId: string) => {
     setStartingRecId(recId);
@@ -58,7 +61,7 @@ export function StudentDashboard({ user, sessions, recommendations }: StudentDas
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
         <div className="bg-white p-6 rounded shadow-sm border border-borderLight flex flex-col">
           <span className="text-sm font-medium text-textSecondary mb-2">Total Tests Taken</span>
-          <span className="text-3xl font-bold text-primaryAccent">{sessions.length}</span>
+          <span className="text-3xl font-bold text-primaryAccent">{takenSessions.length}</span>
         </div>
         <div className="bg-white p-6 rounded shadow-sm border border-borderLight flex flex-col">
           <span className="text-sm font-medium text-textSecondary mb-2">Average Score</span>
@@ -73,9 +76,9 @@ export function StudentDashboard({ user, sessions, recommendations }: StudentDas
       {/* Mentor Recommended Tests Section */}
       <div className="mb-10">
         <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-          <span>👨‍🏫</span> Mentor Recommended Tests
+          Mentor Recommended Tests
         </h2>
-        
+
         {recommendations.length === 0 ? (
           <div className="bg-white border border-borderLight rounded-lg p-8 text-center text-textSecondary text-sm shadow-sm">
             No mock tests recommended by mentors yet. Give your Student ID to your mentor to get assignments.
@@ -91,7 +94,7 @@ export function StudentDashboard({ user, sessions, recommendations }: StudentDas
                       {rec.status}
                     </span>
                   </div>
-                  
+
                   <div className="text-xs text-textSecondary space-y-1 mb-4">
                     <div><span className="font-medium text-textPrimary">Exam Type:</span> {rec.exam_type}</div>
                     <div><span className="font-medium text-textPrimary">Questions:</span> {rec.num_questions}</div>
@@ -109,15 +112,15 @@ export function StudentDashboard({ user, sessions, recommendations }: StudentDas
                   <span className="text-xs text-textSecondary">
                     {rec.status === 'completed' ? 'Completed & Scored' : rec.status === 'attempted' ? 'In Progress' : 'Not started yet'}
                   </span>
-                  
+
                   {rec.status === 'completed' && rec.session_id ? (
                     <Link href={`/results/${rec.session_id}`}>
                       <Button size="sm" variant="outline">View Results</Button>
                     </Link>
                   ) : (
-                    <Button 
-                      size="sm" 
-                      onClick={() => handleStart(rec.id)} 
+                    <Button
+                      size="sm"
+                      onClick={() => handleStart(rec.id)}
                       disabled={startingRecId === rec.id}
                     >
                       {startingRecId === rec.id ? 'Loading...' : rec.status === 'attempted' ? 'Continue' : 'Start Test'}
@@ -151,7 +154,7 @@ export function StudentDashboard({ user, sessions, recommendations }: StudentDas
                   </td>
                 </tr>
               ) : (
-                sessions.map((session) => (
+                sessions.slice(0, 10).map((session) => (
                   <tr key={session.id} className="border-b border-borderLight last:border-0 hover:bg-pageBg/30 transition-colors">
                     <td className="px-6 py-4 font-medium flex items-center gap-2">
                       {session.exam_type}

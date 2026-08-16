@@ -41,7 +41,7 @@ export default async function DashboardPage() {
   let recommendations = [];
   try {
     [sessions, recommendations] = await Promise.all([
-      fetchAPI('/api/sessions?limit=10', { cache: 'no-store' }),
+      fetchAPI('/api/sessions?limit=1000', { cache: 'no-store' }),
       fetchAPI('/api/students/recommendations', { cache: 'no-store' })
     ]);
   } catch (err) {

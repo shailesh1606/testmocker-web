@@ -15,13 +15,13 @@ export function MentorDashboard({ user, assignments }: MentorDashboardProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searching, setSearching] = useState(false);
   const [foundStudent, setFoundStudent] = useState<any>(null);
-  
+
   const { addToast } = useToast();
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
-    
+
     setSearching(true);
     setFoundStudent(null);
     try {
@@ -30,7 +30,7 @@ export function MentorDashboard({ user, assignments }: MentorDashboardProps) {
       if (!res.ok) throw new Error(data.detail || "Student not found");
       setFoundStudent(data);
       addToast("Student found!", "success");
-    } catch(err: any) {
+    } catch (err: any) {
       addToast(err.message, "error");
     } finally {
       setSearching(false);
@@ -106,9 +106,6 @@ export function MentorDashboard({ user, assignments }: MentorDashboardProps) {
               </Link>
             </div>
           </div>
-          <div className="text-xs text-textSecondary mt-8 pt-4 border-t border-borderLight/60">
-            Need to add a scanner? Scan integration files can be attached in future releases.
-          </div>
         </div>
       </div>
 
@@ -120,7 +117,7 @@ export function MentorDashboard({ user, assignments }: MentorDashboardProps) {
             View All
           </Link>
         </div>
-        
+
         <div className="bg-white border text-sm border-borderLight rounded shadow-sm overflow-hidden">
           <table className="w-full text-left border-collapse">
             <thead>

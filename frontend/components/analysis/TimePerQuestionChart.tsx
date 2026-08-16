@@ -43,7 +43,7 @@ export function TimePerQuestionChart({
       correctAns !== null &&
       correctAns !== undefined &&
       String(userAns?.value).trim().toLowerCase() ===
-        String(correctAns?.value).trim().toLowerCase();
+      String(correctAns?.value).trim().toLowerCase();
 
     return {
       question: `Q${i + 1}`,
@@ -55,7 +55,7 @@ export function TimePerQuestionChart({
 
   const avgSeconds =
     timePerQuestion.length > 0
-      ? timePerQuestion.reduce((a, b) => a + b, 0) / timePerQuestion.length
+      ? timePerQuestion.reduce((a, b) => a + b, 0) / (timePerQuestion.length - timePerQuestion.filter((t) => t === 0).length) // exclude unattempted questions from average
       : 0;
 
   const colorMap: Record<string, string> = {

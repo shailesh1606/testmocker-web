@@ -47,7 +47,7 @@ async def get_recommendations(user_id: PyObjectId = Depends(get_current_user_id)
     return result
 
 @router.post("/recommendations/{rec_id}/start")
-async def start_recommendation(rec_id: str, user_id: PyObjectId = Depends(get_current_user_id)):
+async def start_recommendation(rec_id: str, mode: str = "test", user_id: PyObjectId = Depends(get_current_user_id)):
     await require_student(user_id)
     
     rec_q = {"$in": [rec_id, ObjectId(rec_id)]} if ObjectId.is_valid(rec_id) else rec_id
@@ -56,7 +56,9 @@ async def start_recommendation(rec_id: str, user_id: PyObjectId = Depends(get_cu
         raise HTTPException(status_code=404, detail="Recommendation not found")
         
     if rec.get("session_id"):
-        return {"session_id": str(rec["session_id"])}
+        sess = await app.mongodb["sessions"].find_one({"_id": rec["session_id"]})
+        sess_mode = sess.get("mode", "test") if sess else "test"
+        return {"session_id": str(rec["session_id"]), "mode": sess_mode}
         
     test_id_str = str(rec["test_id"])
     test_q = {"$in": [test_id_str, ObjectId(test_id_str)]} if ObjectId.is_valid(test_id_str) else test_id_str
@@ -72,7 +74,7 @@ async def start_recommendation(rec_id: str, user_id: PyObjectId = Depends(get_cu
         "time_limit_seconds": test["time_limit_seconds"],
         "marks_per_correct": test["marks_per_correct"],
         "negative_mark": test["negative_mark"],
-        "mode": "test",
+        "mode": mode,
         "option_format": test.get("option_format", "ABCD"),
         "question_types": ["mcq"] * test["num_questions"],
         "answers": [None] * test["num_questions"],
@@ -91,4 +93,4 @@ async def start_recommendation(rec_id: str, user_id: PyObjectId = Depends(get_cu
         {"$set": {"status": "attempted", "session_id": session_id}}
     )
     
-    return {"session_id": str(session_id)}
+    return {"session_id": str(session_id), "mode": mode}

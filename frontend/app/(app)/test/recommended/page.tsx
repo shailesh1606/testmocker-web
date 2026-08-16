@@ -12,6 +12,8 @@ export default function RecommendedTestsPage() {
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [startingRecId, setStartingRecId] = useState<string | null>(null);
+  const [showModeModal, setShowModeModal] = useState(false);
+  const [pendingRecId, setPendingRecId] = useState<string | null>(null);
   const router = useRouter();
   const { addToast } = useToast();
 
@@ -34,17 +36,34 @@ export default function RecommendedTestsPage() {
     loadRecommendations();
   }, []);
 
-  const handleStart = async (recId: string) => {
+  const handleStart = async (recId: string, modeOverride?: 'test' | 'learning') => {
+    const rec = recommendations.find(r => r.id === recId);
+    const isAttempted = rec?.status === 'attempted';
+
+    if (!isAttempted && !modeOverride) {
+      setPendingRecId(recId);
+      setShowModeModal(true);
+      return;
+    }
+
+    const modeParam = modeOverride || 'test';
     setStartingRecId(recId);
     try {
-      const res = await fetch(`/api/students/recommendations/${recId}/start`, { method: 'POST' });
+      const res = await fetch(`/api/students/recommendations/${recId}/start?mode=${modeParam}`, { method: 'POST' });
       if (!res.ok) throw new Error("Failed to start test");
       const data = await res.json();
-      router.push(`/test/${data.session_id}`);
+
+      if (data.mode === 'learning') {
+        router.push(`/learn/${data.session_id}`);
+      } else {
+        router.push(`/test/${data.session_id}`);
+      }
     } catch (err: any) {
       addToast(err.message, 'error');
     } finally {
       setStartingRecId(null);
+      setShowModeModal(false);
+      setPendingRecId(null);
     }
   };
 
@@ -59,7 +78,7 @@ export default function RecommendedTestsPage() {
       <Sidebar />
       <div className="flex-1 flex flex-col min-h-screen">
         <TopBar title="Mentor Recommended Tests" />
-        
+
         <div className="p-6 md:p-10 flex-1 w-full max-w-7xl mx-auto">
           {loading ? (
             <div className="p-10 text-center text-textSecondary">Loading recommendations...</div>
@@ -82,7 +101,7 @@ export default function RecommendedTestsPage() {
                         {rec.status}
                       </span>
                     </div>
-                    
+
                     <div className="text-xs text-textSecondary space-y-1.5 mb-6 border-t border-borderLight pt-3">
                       <div><span className="font-medium text-textPrimary">Mentor:</span> {rec.mentor_name}</div>
                       <div><span className="font-medium text-textPrimary">Exam Type:</span> {rec.exam_type}</div>
@@ -93,12 +112,12 @@ export default function RecommendedTestsPage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center justify-between gap-3 pt-3 border-t border-borderLight/60 mt-auto">
                     <span className="text-xs text-textSecondary font-medium">
                       {rec.status === 'completed' ? 'Completed & Scored' : rec.status === 'attempted' ? 'In Progress' : 'Not started yet'}
                     </span>
-                    
+
                     {rec.status === 'completed' && rec.session_id ? (
                       <Link href={`/results/${rec.session_id}`}>
                         <Button size="sm" variant="outline">View Results</Button>
@@ -119,6 +138,41 @@ export default function RecommendedTestsPage() {
           )}
         </div>
       </div>
+
+      {showModeModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in px-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full border border-borderLight shadow-lg space-y-6">
+            <div>
+              <h3 className="text-lg font-bold text-textPrimary mb-1">Select Mode</h3>
+              <p className="text-xs text-textSecondary">Choose how you want to attempt this mentor recommended test:</p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              <div
+                onClick={() => handleStart(pendingRecId!, 'test')}
+                className="border border-borderLight rounded p-4 cursor-pointer hover:border-primaryAccent hover:bg-primaryAccent/5 transition-all text-left group"
+              >
+                <div className="font-bold text-sm text-textPrimary group-hover:text-primaryAccent mb-1">⏱️ Test Mode</div>
+                <div className="text-[11px] text-textSecondary leading-normal">Standard timed exam environment. Instant results at the end.</div>
+              </div>
+
+              <div
+                onClick={() => handleStart(pendingRecId!, 'learning')}
+                className="border border-borderLight rounded p-4 cursor-pointer hover:border-primaryAccent hover:bg-primaryAccent/5 transition-all text-left group"
+              >
+                <div className="font-bold text-sm text-textPrimary group-hover:text-primaryAccent mb-1">📖 Learning Mode</div>
+                <div className="text-[11px] text-textSecondary leading-normal">Timer-free learning console. Access AI-powered hints while you solve.</div>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-borderLight/60">
+              <Button variant="ghost" size="sm" onClick={() => { setShowModeModal(false); setPendingRecId(null); }}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

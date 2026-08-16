@@ -13,6 +13,8 @@ interface StudentDashboardProps {
 
 export function StudentDashboard({ user, sessions, recommendations }: StudentDashboardProps) {
   const [startingRecId, setStartingRecId] = useState<string | null>(null);
+  const [showModeModal, setShowModeModal] = useState(false);
+  const [pendingRecId, setPendingRecId] = useState<string | null>(null);
   const router = useRouter();
 
   const totalTests = sessions.length;
@@ -23,17 +25,34 @@ export function StudentDashboard({ user, sessions, recommendations }: StudentDas
     .sort((a, b) => new Date(b.date_recommended).getTime() - new Date(a.date_recommended).getTime())
     .slice(0, 3);
 
-  const handleStart = async (recId: string) => {
+  const handleStart = async (recId: string, modeOverride?: 'test' | 'learning') => {
+    const rec = recommendations.find(r => r.id === recId);
+    const isAttempted = rec?.status === 'attempted';
+
+    if (!isAttempted && !modeOverride) {
+      setPendingRecId(recId);
+      setShowModeModal(true);
+      return;
+    }
+
+    const modeParam = modeOverride || 'test';
     setStartingRecId(recId);
     try {
-      const res = await fetch(`/api/students/recommendations/${recId}/start`, { method: 'POST' });
+      const res = await fetch(`/api/students/recommendations/${recId}/start?mode=${modeParam}`, { method: 'POST' });
       if (!res.ok) throw new Error("Failed to start test");
       const data = await res.json();
-      router.push(`/test/${data.session_id}`);
+      
+      if (data.mode === 'learning') {
+        router.push(`/learn/${data.session_id}`);
+      } else {
+        router.push(`/test/${data.session_id}`);
+      }
     } catch (err) {
       console.error(err);
     } finally {
       setStartingRecId(null);
+      setShowModeModal(false);
+      setPendingRecId(null);
     }
   };
 
@@ -201,6 +220,41 @@ export function StudentDashboard({ user, sessions, recommendations }: StudentDas
           </table>
         </div>
       </div>
+
+      {showModeModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in px-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full border border-borderLight shadow-lg space-y-6">
+            <div>
+              <h3 className="text-lg font-bold text-textPrimary mb-1">Select Mode</h3>
+              <p className="text-xs text-textSecondary">Choose how you want to attempt this mentor recommended test:</p>
+            </div>
+            
+            <div className="grid grid-cols-1 gap-4">
+              <div 
+                onClick={() => handleStart(pendingRecId!, 'test')}
+                className="border border-borderLight rounded p-4 cursor-pointer hover:border-primaryAccent hover:bg-primaryAccent/5 transition-all text-left group"
+              >
+                <div className="font-bold text-sm text-textPrimary group-hover:text-primaryAccent mb-1">⏱️ Test Mode</div>
+                <div className="text-[11px] text-textSecondary leading-normal">Standard timed exam environment. Instant results at the end.</div>
+              </div>
+              
+              <div 
+                onClick={() => handleStart(pendingRecId!, 'learning')}
+                className="border border-borderLight rounded p-4 cursor-pointer hover:border-primaryAccent hover:bg-primaryAccent/5 transition-all text-left group"
+              >
+                <div className="font-bold text-sm text-textPrimary group-hover:text-primaryAccent mb-1">📖 Learning Mode</div>
+                <div className="text-[11px] text-textSecondary leading-normal">Timer-free learning console. Access AI-powered hints while you solve.</div>
+              </div>
+            </div>
+            
+            <div className="flex justify-end pt-2 border-t border-borderLight/60">
+              <Button variant="ghost" size="sm" onClick={() => { setShowModeModal(false); setPendingRecId(null); }}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

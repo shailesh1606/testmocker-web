@@ -19,7 +19,8 @@ export function Sidebar() {
   ] : [
     { label: 'Dashboard', href: '/dashboard', icon: '🏠' },
     { label: 'My Tests', href: '/tests', icon: '📋' },
-    { label: 'New Test', href: '/test/new', icon: '➕' }
+    { label: 'New Test', href: '/test/new', icon: '➕' },
+    { label: 'Recommended Tests', href: '/test/recommended', icon: '👨‍🏫' }
   ];
 
   const handleLogout = async () => {

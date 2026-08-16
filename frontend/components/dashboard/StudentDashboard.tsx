@@ -19,6 +19,10 @@ export function StudentDashboard({ user, sessions, recommendations }: StudentDas
   const completedTests = sessions.filter(s => s.status === 'completed' || s.status === 'submitted').length;
   const inProgressTests = sessions.filter(s => s.status === 'in_progress').length;
 
+  const recentRecommendations = [...recommendations]
+    .sort((a, b) => new Date(b.date_recommended).getTime() - new Date(a.date_recommended).getTime())
+    .slice(0, 3);
+
   const handleStart = async (recId: string) => {
     setStartingRecId(recId);
     try {
@@ -73,9 +77,14 @@ export function StudentDashboard({ user, sessions, recommendations }: StudentDas
 
       {/* Mentor Recommended Tests Section */}
       <div className="mb-10">
-        <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-          Mentor Recommended Tests
-        </h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-bold">Mentor Recommended Tests</h2>
+          {recommendations.length > 0 && (
+            <Link href="/test/recommended">
+              <Button size="sm" variant="outline">View All</Button>
+            </Link>
+          )}
+        </div>
 
         {recommendations.length === 0 ? (
           <div className="bg-white border border-borderLight rounded-lg p-8 text-center text-textSecondary text-sm shadow-sm">
@@ -83,7 +92,7 @@ export function StudentDashboard({ user, sessions, recommendations }: StudentDas
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {recommendations.map((rec: any) => (
+            {recentRecommendations.map((rec: any) => (
               <div key={rec.id} className="bg-white p-6 rounded-lg border border-borderLight shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
                 <div>
                   <div className="flex items-start justify-between gap-4 mb-3">

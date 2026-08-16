@@ -15,11 +15,9 @@ export function StudentDashboard({ user, sessions, recommendations }: StudentDas
   const [startingRecId, setStartingRecId] = useState<string | null>(null);
   const router = useRouter();
 
-  const takenSessions = sessions.filter(s => s.status === 'completed' || s.status === 'submitted');
-  const completedSessions = sessions.filter(s => s.status === 'completed');
-
-  const bestScore = completedSessions.reduce((max: number, s: any) => Math.max(max, s.score || 0), 0);
-  const avgScore = completedSessions.length ? Math.round(completedSessions.reduce((sum: number, s: any) => sum + (s.score || 0), 0) / completedSessions.length) : 0;
+  const totalTests = sessions.length;
+  const completedTests = sessions.filter(s => s.status === 'completed' || s.status === 'submitted').length;
+  const inProgressTests = sessions.filter(s => s.status === 'in_progress').length;
 
   const handleStart = async (recId: string) => {
     setStartingRecId(recId);
@@ -60,16 +58,16 @@ export function StudentDashboard({ user, sessions, recommendations }: StudentDas
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
         <div className="bg-white p-6 rounded shadow-sm border border-borderLight flex flex-col">
-          <span className="text-sm font-medium text-textSecondary mb-2">Total Tests Taken</span>
-          <span className="text-3xl font-bold text-primaryAccent">{takenSessions.length}</span>
+          <span className="text-sm font-medium text-textSecondary mb-2">Total Tests</span>
+          <span className="text-3xl font-bold text-primaryAccent">{totalTests}</span>
         </div>
         <div className="bg-white p-6 rounded shadow-sm border border-borderLight flex flex-col">
-          <span className="text-sm font-medium text-textSecondary mb-2">Average Score</span>
-          <span className="text-3xl font-bold text-warning">{avgScore}</span>
+          <span className="text-sm font-medium text-textSecondary mb-2">Completed Tests</span>
+          <span className="text-3xl font-bold text-success">{completedTests}</span>
         </div>
         <div className="bg-white p-6 rounded shadow-sm border border-borderLight flex flex-col">
-          <span className="text-sm font-medium text-textSecondary mb-2">Best Score</span>
-          <span className="text-3xl font-bold text-success">{bestScore}</span>
+          <span className="text-sm font-medium text-textSecondary mb-2">Tests in Progress</span>
+          <span className="text-3xl font-bold text-warning">{inProgressTests}</span>
         </div>
       </div>
 

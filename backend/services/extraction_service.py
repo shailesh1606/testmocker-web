@@ -51,9 +51,11 @@ async def run_openai_extraction(
     ak_text: Optional[str],
     num_questions: int,
     qp_images: Optional[List[str]] = None,
-    ak_images: Optional[List[str]] = None
+    ak_images: Optional[List[str]] = None,
+    api_key: Optional[str] = None
 ) -> dict:
-    if not settings.openai_api_key or settings.openai_api_key == "dummy_key":
+    actual_key = api_key or settings.openai_api_key
+    if not actual_key or actual_key == "dummy_key":
         raise Exception("OpenAI API key is not configured")
 
     openai.api_key = settings.openai_api_key
@@ -182,7 +184,7 @@ async def run_openai_extraction(
     
     return json.loads(response.choices[0].message.content.strip())
 
-async def extract_answers_from_pdf(qp_path: str, ak_path: Optional[str], num_questions: int) -> Tuple[List[dict], str]:
+async def extract_answers_from_pdf(qp_path: str, ak_path: Optional[str], num_questions: int, user_id: Optional[str] = None) -> Tuple[List[dict], str]:
     qp_text = extract_text_from_pdf(qp_path)
     ak_text = extract_text_from_pdf(ak_path) if ak_path else None
     
@@ -213,6 +215,7 @@ async def extract_answers_from_pdf(qp_path: str, ak_path: Optional[str], num_que
                 user_api_key = decrypt_api_key(encrypted_key)
         
     option_format = "ABCD"
+    answers = []
     try:
         result_json = await run_openai_extraction(
             qp_text if qp_is_meaningful else None,
@@ -222,26 +225,28 @@ async def extract_answers_from_pdf(qp_path: str, ak_path: Optional[str], num_que
             ak_images,
             api_key=user_api_key
         )
-        questions = result_json.get("questions", [])
-        option_format = result_json.get("option_format", "ABCD")
+        questions = result_json.get("questions") or []
+        option_format = result_json.get("option_format") or "ABCD"
+        
+        q_map = {}
+        for q in questions:
+            if not q:
+                continue
+            q_num = q.get("question_number")
+            if q_num is not None:
+                q_map[int(q_num)] = {
+                    "type": q.get("question_type", "mcq") if q.get("question_type") in ["mcq", "numeric", "text"] else "mcq",
+                    "value": str(q.get("correct_answer")) if q.get("correct_answer") is not None else ""
+                }
+                
+        for i in range(1, num_questions + 1):
+            if i in q_map:
+                answers.append(q_map[i])
+            else:
+                answers.append({"type": "mcq", "value": ""})
     except Exception as e:
         print(f"Error during OpenAI answer key extraction: {e}")
-        questions = []
+        # Fallback to empty mock answers
+        answers = [{"type": "mcq", "value": ""}] * num_questions
         
-    answers = []
-    q_map = {}
-    for q in questions:
-        q_num = q.get("question_number")
-        if q_num is not None:
-            q_map[int(q_num)] = {
-                "type": q.get("question_type", "mcq") if q.get("question_type") in ["mcq", "numeric", "text"] else "mcq",
-                "value": str(q.get("correct_answer")) if q.get("correct_answer") is not None else ""
-            }
-            
-    for i in range(1, num_questions + 1):
-        if i in q_map:
-            answers.append(q_map[i])
-        else:
-            answers.append({"type": "mcq", "value": ""})
-            
     return answers, option_format

@@ -57,7 +57,7 @@ async def mentor_extract_answers(data: MentorExtractRequest, user_id: PyObjectId
         ak_path = ak_doc["storage_path"]
         
     try:
-        answers, option_format = await extract_answers_from_pdf(qp_path, ak_path, data.num_questions)
+        answers, option_format = await extract_answers_from_pdf(qp_path, ak_path, data.num_questions, user_id=str(user_id))
         return {"answers": answers, "option_format": option_format}
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Answer extraction failed: {str(e)}")
@@ -106,6 +106,24 @@ async def create_mentor_test(data: MentorTestCreate, user_id: PyObjectId = Depen
     
     result = await app.mongodb["mentor_tests"].insert_one(test_db)
     return {"test_id": str(result.inserted_id)}
+
+@router.get("/tests")
+async def get_mentor_tests(user_id: PyObjectId = Depends(get_current_user_id)):
+    await require_mentor(user_id)
+    
+    cursor = app.mongodb["mentor_tests"].find({"mentor_id": user_id})
+    tests = await cursor.to_list(length=1000)
+    
+    result = []
+    for t in tests:
+        result.append({
+            "id": str(t["_id"]),
+            "title": t["title"],
+            "exam_type": t["exam_type"],
+            "num_questions": t["num_questions"],
+            "created_at": t["created_at"]
+        })
+    return result
 
 @router.post("/recommend")
 async def recommend_test(data: RecommendRequest, user_id: PyObjectId = Depends(get_current_user_id)):

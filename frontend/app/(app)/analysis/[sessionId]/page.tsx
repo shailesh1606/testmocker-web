@@ -5,7 +5,7 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { TopBar } from '@/components/layout/TopBar';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { useToast } from '@/components/ui/ToastProvider';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { TimePerQuestionChart } from '@/components/analysis/TimePerQuestionChart';
@@ -28,7 +28,7 @@ export default function AnalysisPage({ params }: { params: { sessionId: string }
         const sessionD = await sessionRes.json();
         if (!sessionRes.ok) throw new Error();
         setSessionData(sessionD);
-      } catch(err) {
+      } catch (err) {
         addToast("Analysis failed to load", "error");
       } finally {
         setLoading(false);
@@ -46,16 +46,49 @@ export default function AnalysisPage({ params }: { params: { sessionId: string }
   }, {});
 
   const timePerQuestion: number[] = sessionData?.time_per_question ?? [];
+  const answers = sessionData?.answers ?? [];
+  const correctAnswers = sessionData?.correct_answers ?? [];
+
+  let correctTime = 0;
+  let incorrectTime = 0;
+  let unattemptedTime = 0;
+
+  timePerQuestion.forEach((seconds, i) => {
+    const userAns = answers[i];
+    const correctAns = correctAnswers[i];
+    const attempted = userAns !== null && userAns !== undefined && userAns.value !== null && userAns.value !== undefined && String(userAns.value).trim() !== "";
+
+    if (!attempted) {
+      unattemptedTime += seconds;
+    } else {
+      const correct =
+        correctAns !== null &&
+        correctAns !== undefined &&
+        String(userAns?.value).trim().toLowerCase() === String(correctAns?.value).trim().toLowerCase();
+
+      if (correct) {
+        correctTime += seconds;
+      } else {
+        incorrectTime += seconds;
+      }
+    }
+  });
+
+  const barChartData = [
+    { name: "Correct", time: parseFloat((correctTime / 60).toFixed(1)), fill: "#22C55E" },
+    { name: "Incorrect", time: parseFloat((incorrectTime / 60).toFixed(1)), fill: "#EF4444" },
+    { name: "Unattempted", time: parseFloat((unattemptedTime / 60).toFixed(1)), fill: "#9CA3AF" }
+  ];
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen w-full relative">
       <Sidebar />
       <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden">
-        <TopBar 
-          title="Question Paper Analysis" 
+        <TopBar
+          title="Question Paper Analysis"
           rightNode={<Link href={`/results/${params.sessionId}`}><Button size="sm" variant="outline">Back to Results</Button></Link>}
         />
-        
+
         <div className="p-6 md:p-10 flex-1 flex flex-col w-full max-w-7xl mx-auto">
           {loading ? (
             <div className="m-auto text-center animate-pulse">
@@ -73,7 +106,7 @@ export default function AnalysisPage({ params }: { params: { sessionId: string }
           ) : (
             <div className="flex flex-col gap-8">
               <div className="flex flex-col lg:flex-row gap-8">
-                
+
                 {/* Chart */}
                 <div className="lg:w-[40%] bg-white border border-borderLight shadow-sm rounded-lg p-6">
                   <h3 className="font-bold text-lg mb-6">Topic Distribution</h3>
@@ -92,28 +125,27 @@ export default function AnalysisPage({ params }: { params: { sessionId: string }
                   </div>
                 </div>
 
-                {/* Topics Breakdown */}
-                <div className="lg:w-[60%] flex flex-col gap-6">
-                  {Object.keys(groupBySection).map((section) => (
-                    <div key={section} className="bg-white border border-borderLight shadow-sm rounded-lg p-6">
-                      <h3 className="font-bold text-lg mb-4 text-primaryAccent">{section}</h3>
-                      <div className="flex flex-col gap-4">
-                        {groupBySection[section].map((t: any, i: number) => {
-                          const totalSec = groupBySection[section].reduce((s: number, i: any) => s + i.count, 0);
-                          const pct = Math.round((t.count / totalSec) * 100);
-                          return (
-                            <div key={i} className="flex flex-col gap-1">
-                              <div className="flex justify-between text-sm font-medium">
-                                <span>{t.name}</span>
-                                <span className="text-textSecondary">{t.count} questions ({pct}%)</span>
-                              </div>
-                              <ProgressBar progress={pct} color="bg-primaryAccent" height="h-2" />
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
+                {/* Time Spent Breakdown Bar Chart */}
+                <div className="lg:w-[60%] bg-white border border-borderLight shadow-sm rounded-lg p-6">
+                  <h3 className="font-bold text-lg mb-6">Time Spent by Question Status</h3>
+                  <div className="h-[350px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={barChartData}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis label={{ value: 'Time Spent (minutes)', angle: -90, position: 'insideLeft', offset: 0 }} />
+                        <Tooltip formatter={(value: any) => [`${value} min`, 'Time Spent']} />
+                        <Bar dataKey="time" radius={[4, 4, 0, 0]}>
+                          {barChartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
 
               </div>

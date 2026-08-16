@@ -79,20 +79,20 @@ export default function LandingPage() {
               <span className="w-3 h-3 rounded-full bg-yellow-400 inline-block"></span>
               <span className="w-3 h-3 rounded-full bg-green-400 inline-block"></span>
               <div className="h-6 flex-1 max-w-md mx-auto bg-pageBg rounded border border-borderLight/60 text-[10px] text-textSecondary flex items-center justify-center font-medium">
-                testmocker.ai/dashboard
+                testmocker.ai
               </div>
             </div>
             <div className="overflow-hidden rounded-lg bg-slate-950 aspect-[4/3] relative border border-borderLight/40">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/images/dashboard_mockup.png"
+                src="/images/dashboard_mockup_real.png"
                 alt="TestMocker Dashboard Mockup"
                 className="w-full h-full object-cover select-none pointer-events-none"
               />
             </div>
           </div>
         </div>
-        
+
         {/* Dynamic Background Accents */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primaryAccent/5 rounded-full blur-3xl -z-10"></div>
       </section>

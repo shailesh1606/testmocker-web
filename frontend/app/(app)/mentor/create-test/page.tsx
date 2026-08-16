@@ -7,6 +7,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/ToastProvider';
+import { PdfViewer } from '@/components/test/PdfViewer';
 
 export default function CreateTestPage() {
   const searchParams = useSearchParams();
@@ -272,6 +273,14 @@ export default function CreateTestPage() {
                     </div>
                   )}
                 </div>
+                {qpPdfId && (
+                  <div className="mt-4 border border-borderLight rounded overflow-hidden h-[300px] shadow-sm">
+                    <div className="bg-pageBg px-4 py-2 border-b border-borderLight font-bold text-xs text-textSecondary uppercase">
+                      Preview: Question Paper
+                    </div>
+                    <PdfViewer pdfId={qpPdfId} />
+                  </div>
+                )}
               </div>
 
               {/* Answer Key PDF */}
@@ -301,6 +310,14 @@ export default function CreateTestPage() {
                   )}
                 </div>
                 <p className="text-[10px] text-textSecondary">If attached, the test will be graded automatically upon submission.</p>
+                {akPdfId && (
+                  <div className="mt-4 border border-borderLight rounded overflow-hidden h-[300px] shadow-sm">
+                    <div className="bg-pageBg px-4 py-2 border-b border-borderLight font-bold text-xs text-textSecondary uppercase">
+                      Preview: Answer Key
+                    </div>
+                    <PdfViewer pdfId={akPdfId} />
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end pt-4 border-t border-borderLight/60">

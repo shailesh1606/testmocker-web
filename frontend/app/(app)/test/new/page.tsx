@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/ToastProvider';
 import { useRouter } from 'next/navigation';
+import { PdfViewer } from '@/components/test/PdfViewer';
 
 export default function NewTestWizard() {
   const [step, setStep] = useState(1);
@@ -132,7 +133,14 @@ export default function NewTestWizard() {
                   )}
                 </div>
                 {fileName && !loading && (
-                    <Button className="mt-8" onClick={() => setStep(2)}>Continue Configuration</Button>
+                  <div className="space-y-6 mt-8">
+                    {pdfId && (
+                      <div className="border border-borderLight rounded overflow-hidden h-[400px] shadow-sm">
+                        <PdfViewer pdfId={pdfId} />
+                      </div>
+                    )}
+                    <Button onClick={() => setStep(2)}>Continue Configuration</Button>
+                  </div>
                 )}
               </div>
             )}

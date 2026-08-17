@@ -37,6 +37,11 @@ async def get_session(session_id: str, user_id: PyObjectId = Depends(get_current
     session_q = {"$in": [session_id, ObjectId(session_id)]} if ObjectId.is_valid(session_id) else session_id
     session = await app.mongodb["sessions"].find_one({"_id": session_q, "user_id": user_id})
     if not session:
+        rec = await app.mongodb["recommendations"].find_one({"session_id": session_q, "mentor_id": user_id})
+        if rec:
+            session = await app.mongodb["sessions"].find_one({"_id": session_q})
+            
+    if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     session["_id"] = str(session["_id"])
     session["user_id"] = str(session["user_id"])

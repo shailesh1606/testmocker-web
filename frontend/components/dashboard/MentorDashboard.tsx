@@ -56,7 +56,7 @@ export function MentorDashboard({ user, assignments }: MentorDashboardProps) {
         {/* Student Lookup Tool */}
         <div className="bg-white p-6 rounded-lg border border-borderLight shadow-sm flex flex-col h-fit lg:col-span-2">
           <h2 className="text-base font-bold mb-4 flex items-center gap-2 text-textPrimary">
-            <span>🔍</span> Student Lookup & Assignment
+            Student Lookup & Assignment
           </h2>
           <form onSubmit={handleSearch} className="flex gap-3 mb-6">
             <div className="flex-1">
@@ -101,7 +101,7 @@ export function MentorDashboard({ user, assignments }: MentorDashboardProps) {
               </Link>
               <Link href="/mentor/assignments" className="block">
                 <Button variant="ghost" fullWidth className="justify-start gap-2 py-3 border border-borderLight/40 bg-pageBg/20 hover:bg-pageBg">
-                  <span>📋</span> View All Assignments
+                  View All Assignments
                 </Button>
               </Link>
             </div>

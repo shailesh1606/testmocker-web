@@ -38,15 +38,15 @@ export default function MentorAssignmentsPage() {
     <div className="flex flex-col md:flex-row min-h-screen w-full relative">
       <Sidebar />
       <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden">
-        <TopBar 
-          title="Assigned Tests Summary" 
+        <TopBar
+          title="Assigned Tests Summary"
           rightNode={
             <Link href="/mentor/create-test">
               <Button size="sm">Create & Assign Test</Button>
             </Link>
-          } 
+          }
         />
-        
+
         <div className="p-6 md:p-10 flex-1 w-full max-w-7xl mx-auto animate-fade-in">
           <div className="mb-6">
             <h1 className="text-xl font-bold text-textPrimary">Track Student Progress</h1>
@@ -63,18 +63,19 @@ export default function MentorAssignmentsPage() {
                   <th className="px-6 py-3">Exam Type</th>
                   <th className="px-6 py-3">Recommended On</th>
                   <th className="px-6 py-3">Status</th>
+                  <th className="px-6 py-3">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-textSecondary">
+                    <td colSpan={7} className="px-6 py-8 text-center text-textSecondary">
                       Loading assignments...
                     </td>
                   </tr>
                 ) : assignments.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-textSecondary">
+                    <td colSpan={7} className="px-6 py-8 text-center text-textSecondary">
                       No assignments found. Click "Create & Assign Test" to assign your first mock exam.
                     </td>
                   </tr>
@@ -95,6 +96,15 @@ export default function MentorAssignmentsPage() {
                         <span className={`text-[10px] px-2.5 py-1 border rounded-full font-bold uppercase tracking-wider ${getStatusColor(asg.status)}`}>
                           {asg.status}
                         </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        {asg.status === 'completed' && asg.session_id ? (
+                          <Link href={`/results/${asg.session_id}`} className="text-primaryAccent hover:underline font-bold text-xs">
+                            View Results
+                          </Link>
+                        ) : (
+                          <span className="text-textSecondary text-xs">—</span>
+                        )}
                       </td>
                     </tr>
                   ))

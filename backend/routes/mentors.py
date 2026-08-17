@@ -177,7 +177,8 @@ async def get_assignments(user_id: PyObjectId = Depends(get_current_user_id)):
                 "test_title": test["title"],
                 "exam_type": test["exam_type"],
                 "date_recommended": r["date_recommended"],
-                "status": r["status"]
+                "status": r["status"],
+                "session_id": str(r["session_id"]) if r.get("session_id") else None
             })
             
     return result

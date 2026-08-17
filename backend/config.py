@@ -9,7 +9,6 @@ class Settings(BaseSettings):
     openai_api_key: str = "dummy_key"
     pdf_storage_path: str = "./uploads"
     encryption_key: str = "default_encryption_secret_key"
-    cors_origins: str = "*"
 
     class Config:
         env_file = ".env"

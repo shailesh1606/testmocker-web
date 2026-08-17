@@ -3,6 +3,41 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
+if (typeof window !== 'undefined' && !(window as any).__fetch_intercepted__) {
+  (window as any).__fetch_intercepted__ = true;
+  const originalFetch = window.fetch;
+  window.fetch = async function (input, init) {
+    let url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+    
+    if ((url.startsWith('/api/') || url.startsWith('api/')) && 
+        !url.includes('/api/auth/login') && 
+        !url.includes('/api/auth/register') && 
+        !url.includes('/api/auth/logout')) {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const cleanUrl = url.startsWith('/') ? url : '/' + url;
+      url = `${apiBase}${cleanUrl}`;
+      
+      init = init || {};
+      const headers = new Headers(init.headers || {});
+      
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; auth_token=`);
+      const token = parts.length === 2 ? parts.pop()?.split(';').shift() : null;
+      
+      if (token && !headers.has('Authorization')) {
+        headers.set('Authorization', `Bearer ${token}`);
+      }
+      
+      init.headers = headers;
+      
+      if (typeof input !== 'string') {
+        return originalFetch(url, init);
+      }
+    }
+    return originalFetch(input || url, init);
+  };
+}
+
 interface User {
   id: string;
   name: string;

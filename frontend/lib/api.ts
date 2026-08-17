@@ -3,7 +3,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-const API_BASE = process.env.API_URL || "http://backend:8000";
+const API_BASE = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://backend:8000";
 
 export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
   const token = cookies().get('auth_token')?.value;

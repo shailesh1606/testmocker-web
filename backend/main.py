@@ -25,9 +25,10 @@ async def limit_payload_size(request: Request, call_next):
             )
     return await call_next(request)
 
+cors_origins_list = [origin.strip() for origin in settings.cors_origins.split(",") if origin.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Since Next handles cookies via its own API wrapper
+    allow_origins=cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

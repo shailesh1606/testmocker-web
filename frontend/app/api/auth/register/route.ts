@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     cookies().set({
       name: 'auth_token',
       value: access_token,
-      httpOnly: true,
+      httpOnly: false,
       path: '/',
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

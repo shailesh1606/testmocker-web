@@ -93,8 +93,8 @@ export default function AnalysisPage({ params }: { params: { sessionId: string }
           {loading ? (
             <div className="m-auto text-center animate-pulse">
               <span className="text-5xl block mb-6">🤖</span>
-              <h2 className="text-xl font-bold text-textPrimary mb-2">Analyzing your question paper with AI...</h2>
-              <p className="text-textSecondary max-w-sm mx-auto">Extracting topics, mapping conceptual distribution, and categorizing difficulty.</p>
+              <h2 className="text-xl font-bold text-textPrimary mb-2">Generating topic analysis...</h2>
+              <p className="text-textSecondary max-w-sm mx-auto">Categorizing questions into topics and mapping distribution.</p>
               <div className="mt-8 max-w-xs mx-auto"><ProgressBar progress={60} color="bg-primaryAccent" /></div>
             </div>
           ) : topics.length === 0 ? (

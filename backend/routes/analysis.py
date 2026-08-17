@@ -19,14 +19,35 @@ async def analyze_topics(session_id: str, user_id: PyObjectId = Depends(get_curr
     if not session:
         raise HTTPException(status_code=404)
         
-    # Simulate an AI extracting topics from PDF via GPT-4o
-    topics = [
-        {"name": "Mechanics", "count": 25, "section": "Physics"},
-        {"name": "Electromagnetism", "count": 15, "section": "Physics"},
-        {"name": "Organic Chemistry", "count": 18, "section": "Chemistry"},
-        {"name": "Inorganic Chemistry", "count": 12, "section": "Chemistry"},
-        {"name": "Calculus", "count": 20, "section": "Mathematics"},
-        {"name": "Algebra", "count": 10, "section": "Mathematics"}
-    ]
+    topic_distribution = session.get("topic_distribution", [])
+    topics = []
     
+    if not topic_distribution:
+        # Fallback to Other matching num_questions for legacy tests
+        num_questions = session.get("num_questions", 75)
+        topics = [{"name": "Other", "count": num_questions, "section": "Other"}]
+    else:
+        for item in topic_distribution:
+            topic_name = item.get("topic", "Other")
+            q_count = item.get("question_count", 0)
+            
+            # Determine section based on fixed rules
+            section = "Other"
+            t_lower = topic_name.lower()
+            
+            if t_lower in ["algebra", "calculus", "coordinate geometry", "trigonometry & vectors"]:
+                section = "Mathematics"
+            elif t_lower in ["mechanics", "electrodynamics", "modern physics & optics", "thermodynamics & waves", "thermodynamics & modern physics"]:
+                section = "Physics"
+            elif t_lower in ["physical chemistry", "organic chemistry", "inorganic chemistry"]:
+                section = "Chemistry"
+            elif t_lower in ["cell biology", "plant physiology", "plant diversity & reproduction", "genetics & evolution", "human physiology", "human health & disease", "animal diversity & ecology"]:
+                section = "Biology"
+                
+            topics.append({
+                "name": topic_name,
+                "count": q_count,
+                "section": section
+            })
+            
     return {"topics": topics}

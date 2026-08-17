@@ -34,6 +34,7 @@ export default function CreateTestPage() {
   // Answers State
   const [correctAnswers, setCorrectAnswers] = useState<any[]>([]);
   const [optionFormat, setOptionFormat] = useState('ABCD');
+  const [topicDistribution, setTopicDistribution] = useState<any[]>([]);
   const [extracting, setExtracting] = useState(false);
 
   // Student details
@@ -136,18 +137,21 @@ export default function CreateTestPage() {
         body: JSON.stringify({
           pdf_id: qpPdfId,
           answer_key_pdf_id: akPdfId,
-          num_questions: numQuestions
+          num_questions: numQuestions,
+          exam_type: examType
         })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Failed to extract answers");
       setCorrectAnswers(data.answers);
       setOptionFormat(data.option_format || "ABCD");
+      setTopicDistribution(data.topic_distribution || []);
       addToast("AI Answer Key extraction complete!", "success");
     } catch (err: any) {
       addToast(err.message || "Failed to extract answers automatically.", "error");
       setCorrectAnswers(Array(numQuestions).fill(null).map(() => ({ type: 'mcq', value: '' })));
       setOptionFormat("ABCD");
+      setTopicDistribution([]);
     } finally {
       setExtracting(false);
     }
@@ -190,7 +194,8 @@ export default function CreateTestPage() {
           pdf_id: qpPdfId,
           answer_key_pdf_id: akPdfId,
           correct_answers: correctAnswers.map(c => c.value ? c : null),
-          option_format: optionFormat
+          option_format: optionFormat,
+          topic_distribution: topicDistribution
         })
       });
       const testData = await testRes.json();

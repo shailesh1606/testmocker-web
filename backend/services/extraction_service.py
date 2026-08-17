@@ -250,3 +250,93 @@ async def extract_answers_from_pdf(qp_path: str, ak_path: Optional[str], num_que
         answers = [{"type": "mcq", "value": ""}] * num_questions
         
     return answers, option_format
+
+async def run_openai_topics(
+    qp_text: Optional[str],
+    exam_type: str,
+    num_questions: int,
+    qp_images: Optional[List[str]] = None,
+    api_key: Optional[str] = None
+) -> dict:
+    actual_key = api_key or settings.openai_api_key
+    if not actual_key or actual_key == "dummy_key":
+        raise Exception("OpenAI API key is not configured")
+        
+    is_vision_mode = bool(qp_images)
+    
+    is_jee = "jee" in exam_type.lower()
+    is_neet = "neet" in exam_type.lower()
+    
+    if is_jee:
+        taxonomy = (
+            "- Mathematics: Algebra, Calculus, Coordinate Geometry, Trigonometry & Vectors\n"
+            "- Physics: Mechanics, Electrodynamics, Modern Physics & Optics, Thermodynamics & Waves\n"
+            "- Chemistry: Physical Chemistry, Organic Chemistry, Inorganic Chemistry\n"
+            "- Other\n"
+            "Every question MUST be classified into exactly one of these 12 categories: 'Algebra', 'Calculus', 'Coordinate Geometry', 'Trigonometry & Vectors', 'Mechanics', 'Electrodynamics', 'Modern Physics & Optics', 'Thermodynamics & Waves', 'Physical Chemistry', 'Organic Chemistry', 'Inorganic Chemistry', or 'Other'. Do not use any other category names."
+        )
+    elif is_neet:
+        taxonomy = (
+            "Every question MUST be classified into exactly one of these 14 categories: 'Mechanics', 'Electrodynamics', 'Thermodynamics & Modern Physics', 'Physical Chemistry', 'Organic Chemistry', 'Inorganic Chemistry', 'Cell Biology', 'Plant Physiology', 'Plant Diversity & Reproduction', 'Genetics & Evolution', 'Human Physiology', 'Human Health & Disease', 'Animal Diversity & Ecology', or 'Other'. Do not use any other category names."
+        )
+    else:
+        taxonomy = (
+            "Dynamically identify the appropriate topics from the question content. Follow these rules:\n"
+            "- Create a maximum of 11 topics + 'Other'.\n"
+            "- Merge closely related topics instead of creating overly specific categories.\n"
+            "- Use 'Other' for questions that genuinely don't fit the generated topics."
+        )
+
+    system_prompt = (
+        "You are an expert exam analyzer. Your task is to perform topic classification on the questions in the provided Question Paper.\n"
+        f"The test has exactly {num_questions} questions.\n"
+        f"Here is the taxonomy/rules you must follow for topic classification:\n{taxonomy}\n\n"
+        "You must analyze the entire Question Paper (using the text or page images provided) and classify each of the questions into one of the allowed topics. "
+        "Calculate the aggregated question count for each topic. "
+        "Ensure that the sum of 'question_count' across all topics in the distribution is EXACTLY equal to the total number of questions, which is: "
+        f"{num_questions}.\n\n"
+        "You must respond ONLY with a strict JSON object matching this schema:\n"
+        "{\n"
+        "  \"topic_distribution\": [\n"
+        "    {\n"
+        "      \"topic\": \"Name of the topic\",\n"
+        "      \"question_count\": 8\n"
+        "    }\n"
+        "  ]\n"
+        "}\n\n"
+        "Respond ONLY with valid JSON. Do not include markdown formatting like ```json or trailing explanations."
+    )
+    
+    if is_vision_mode:
+        user_content = [
+            {
+                "type": "text",
+                "text": f"Here are the rendered page images of the Question Paper. Please classify the {num_questions} questions into their topics."
+            }
+        ]
+        for img in qp_images[:8]:  # Limit to 8 pages for token safety
+            user_content.append({
+                "type": "image_url",
+                "image_url": {
+                    "url": f"data:image/png;base64,{img}"
+                }
+            })
+    else:
+        user_content = (
+            f"QUESTION PAPER TEXT:\n{qp_text[:35000]}\n\n"
+            f"Please classify the {num_questions} questions into their topics based on the text above."
+        )
+
+    from openai import OpenAI
+    client = OpenAI(api_key=actual_key)
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        response_format={"type": "json_object"},
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_content}
+        ],
+        temperature=0.0
+    )
+    
+    return json.loads(response.choices[0].message.content.strip())

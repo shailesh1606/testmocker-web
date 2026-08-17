@@ -79,6 +79,7 @@ async def start_recommendation(rec_id: str, mode: str = "test", user_id: PyObjec
         "question_types": ["mcq"] * test["num_questions"],
         "answers": [None] * test["num_questions"],
         "correct_answers": test.get("correct_answers", []),
+        "topic_distribution": test.get("topic_distribution", []),
         "status": "in_progress",
         "hints_used": {},
         "time_per_question": [],

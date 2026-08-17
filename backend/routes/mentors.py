@@ -22,6 +22,7 @@ class MentorTestCreate(BaseModel):
     answer_key_pdf_id: Optional[str] = None
     correct_answers: List[Optional[dict]] = []
     option_format: str = "ABCD"
+    topic_distribution: Optional[List[dict]] = []
 
 class RecommendRequest(BaseModel):
     test_id: str
@@ -31,6 +32,7 @@ class MentorExtractRequest(BaseModel):
     pdf_id: str
     answer_key_pdf_id: Optional[str] = None
     num_questions: int = 75
+    exam_type: Optional[str] = "JEE Mains"
 
 async def require_mentor(user_id: PyObjectId):
     user_q = {"$in": [user_id, ObjectId(user_id)]} if ObjectId.is_valid(user_id) else user_id
@@ -58,7 +60,53 @@ async def mentor_extract_answers(data: MentorExtractRequest, user_id: PyObjectId
         
     try:
         answers, option_format = await extract_answers_from_pdf(qp_path, ak_path, data.num_questions, user_id=str(user_id))
-        return {"answers": answers, "option_format": option_format}
+        
+        # Calculate topic distribution
+        topic_distribution = []
+        try:
+            from services.extraction_service import run_openai_topics, render_pdf_to_images, extract_text_from_pdf, is_meaningful_text
+            qp_text = extract_text_from_pdf(qp_path)
+            qp_is_meaningful = is_meaningful_text(qp_text)
+            qp_images = None
+            if not qp_is_meaningful:
+                qp_images = render_pdf_to_images(qp_path)
+                
+            user_api_key = None
+            user_doc = await app.mongodb["users"].find_one({"_id": user_id})
+            if user_doc:
+                encrypted_key = user_doc.get("openai_api_key")
+                if encrypted_key:
+                    from services.crypto_service import decrypt_api_key
+                    user_api_key = decrypt_api_key(encrypted_key)
+            
+            result_json = await run_openai_topics(
+                qp_text=qp_text if qp_is_meaningful else None,
+                exam_type=data.exam_type or "Custom",
+                num_questions=data.num_questions,
+                qp_images=qp_images,
+                api_key=user_api_key
+            )
+            raw_distribution = result_json.get("topic_distribution", [])
+            
+            total_classified = sum(item.get("question_count", 0) for item in raw_distribution)
+            if total_classified != data.num_questions:
+                diff = data.num_questions - total_classified
+                other_item = next((item for item in raw_distribution if item.get("topic") == "Other"), None)
+                if other_item:
+                    other_item["question_count"] = max(0, other_item.get("question_count", 0) + diff)
+                else:
+                    raw_distribution.append({"topic": "Other", "question_count": max(0, diff)})
+            
+            topic_distribution = [item for item in raw_distribution if item.get("question_count", 0) > 0]
+        except Exception as e:
+            print(f"Error classifying topics for mentor: {e}")
+            topic_distribution = [{"topic": "Other", "question_count": data.num_questions}]
+            
+        return {
+            "answers": answers, 
+            "option_format": option_format,
+            "topic_distribution": topic_distribution
+        }
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Answer extraction failed: {str(e)}")
 
@@ -101,6 +149,7 @@ async def create_mentor_test(data: MentorTestCreate, user_id: PyObjectId = Depen
         "answer_key_pdf_id": PyObjectId(data.answer_key_pdf_id) if data.answer_key_pdf_id else None,
         "correct_answers": data.correct_answers,
         "option_format": data.option_format,
+        "topic_distribution": data.topic_distribution or [],
         "created_at": datetime.utcnow()
     }
     
